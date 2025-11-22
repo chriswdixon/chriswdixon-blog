@@ -234,33 +234,103 @@ function slugify(text) {
     .replace(/^-+|-+$/g, '');
 }
 
-// Media asset functions
-async function createMediaAsset(file, context = 'generic') {
+// GitHub API helper to commit files to repo
+async function commitFileToGitHub(filePath, fileContent, message = 'Add image') {
+  const githubToken = process.env.GITHUB_TOKEN;
+  const githubRepo = process.env.GITHUB_REPO || 'chriswdixon/chriswdixon-blog';
+  const githubBranch = process.env.GITHUB_BRANCH || 'main';
+
+  if (!githubToken) {
+    throw new Error('GITHUB_TOKEN environment variable is not set');
+  }
+
+  try {
+    // Get the current file SHA if it exists (for updates)
+    const getFileUrl = `https://api.github.com/repos/${githubRepo}/contents/${filePath}`;
+    const getFileResponse = await fetch(getFileUrl, {
+      headers: {
+        'Authorization': `token ${githubToken}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+
+    let sha = null;
+    if (getFileResponse.ok) {
+      const fileData = await getFileResponse.json();
+      sha = fileData.sha;
+    }
+
+    // Commit the file
+    const content = Buffer.from(fileContent).toString('base64');
+    const commitUrl = `https://api.github.com/repos/${githubRepo}/contents/${filePath}`;
+    
+    const commitResponse = await fetch(commitUrl, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${githubToken}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: message,
+        content: content,
+        branch: githubBranch,
+        ...(sha ? { sha: sha } : {})
+      })
+    });
+
+    if (!commitResponse.ok) {
+      const error = await commitResponse.json();
+      throw new Error(`GitHub API error: ${error.message || commitResponse.statusText}`);
+    }
+
+    const result = await commitResponse.json();
+    return {
+      path: result.content.path,
+      url: result.content.html_url,
+      download_url: result.content.download_url
+    };
+  } catch (error) {
+    console.error('Error committing file to GitHub:', error);
+    throw error;
+  }
+}
+
+// Media asset functions - now saves to GitHub repo
+async function createMediaAsset(file, context = 'blog') {
   if (!file || !file.buffer) {
     return null;
   }
 
   try {
+    // Generate a unique filename
     const sanitizedFilename = (file.originalname || 'upload').replace(/[^a-zA-Z0-9._-]/g, '_');
-    const blobKey = `${context}-${crypto.randomUUID()}-${sanitizedFilename}`;
+    const extension = sanitizedFilename.split('.').pop() || 'jpg';
+    const uniqueFilename = `${crypto.randomUUID()}.${extension}`;
+    const filePath = `assets/images/posts/${uniqueFilename}`;
 
-    const store = getBlobStore('media-assets');
-    await withRetry(() => store.set(blobKey, file.buffer, {
-      metadata: {
-        filename: file.originalname || 'upload',
-        mimeType: file.mimetype,
-        context: context
-      }
-    }));
+    // Commit file to GitHub
+    const githubResult = await commitFileToGitHub(
+      filePath,
+      file.buffer,
+      `Add blog post image: ${sanitizedFilename}`
+    );
 
+    // Store metadata in database
+    const imageUrl = `/${filePath}`; // Relative path for GitHub Pages
     const result = await pool.query(
       `INSERT INTO media_assets (filename, mime_type, file_size, blob_key, context)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id, filename, mime_type, file_size, blob_key, context, created_at`,
-      [file.originalname || 'upload', file.mimetype, file.size, blobKey, context]
+      [sanitizedFilename, file.mimetype, file.size, filePath, context]
     );
 
-    return { ...result.rows[0], buffer: file.buffer };
+    return {
+      ...result.rows[0],
+      path: filePath,
+      url: imageUrl,
+      github_url: githubResult.url
+    };
   } catch (error) {
     console.error('Error creating media asset:', error);
     throw error;
@@ -314,7 +384,17 @@ function buildMediaUrl(assetId) {
 function transformBlogPost(row) {
   if (!row) return row;
   const assetId = row.featured_image_asset_id || null;
-  const resolvedUrl = assetId ? buildMediaUrl(assetId) : row.featured_image_url;
+  // If we have a featured_image_url that starts with /, it's a repo path - use as-is
+  // Otherwise, if we have an assetId, use the media URL
+  // Otherwise, use the featured_image_url directly
+  let resolvedUrl = row.featured_image_url;
+  if (assetId && !row.featured_image_url) {
+    resolvedUrl = buildMediaUrl(assetId);
+  } else if (row.featured_image_url && !row.featured_image_url.startsWith('/') && !row.featured_image_url.startsWith('http')) {
+    // If it's a relative path without leading slash, add it
+    resolvedUrl = row.featured_image_url.startsWith('assets/') ? '/' + row.featured_image_url : row.featured_image_url;
+  }
+  
   return {
     ...row,
     featured_image_asset_id: assetId,
@@ -1140,7 +1220,7 @@ app.delete('/api/admin/comments/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Upload media
+// Upload media - saves to GitHub repo
 app.post('/api/admin/upload', authenticateToken, upload.single('file'), async (req, res) => {
   try {
     const file = req.file;
@@ -1153,14 +1233,20 @@ app.post('/api/admin/upload', authenticateToken, upload.single('file'), async (r
 
     res.json({
       asset_id: asset.id,
-      url: buildMediaUrl(asset.id),
+      url: asset.url, // Relative path like /assets/images/posts/uuid.jpg
+      path: asset.path, // Full path in repo
       mime_type: asset.mime_type,
       size: asset.file_size,
-      filename: asset.filename
+      filename: asset.filename,
+      github_url: asset.github_url
     });
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    if (error.message.includes('GITHUB_TOKEN')) {
+      res.status(500).json({ error: 'GitHub integration not configured. Please set GITHUB_TOKEN environment variable.' });
+    } else {
+      res.status(500).json({ error: error.message || 'Internal server error' });
+    }
   }
 });
 

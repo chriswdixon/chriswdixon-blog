@@ -86,8 +86,16 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="featured_image_url">Featured Image URL</label>
-                    <input type="url" id="featured_image_url" name="featured_image_url">
+                    <label for="featured_image">Featured Image</label>
+                    <input type="file" id="featured_image" name="featured_image" accept="image/*">
+                    <div id="image-preview" style="margin-top: var(--spacing-sm); display: none;">
+                        <img id="preview-img" src="" alt="Preview" style="max-width: 300px; max-height: 200px; border-radius: var(--radius-md);">
+                        <p id="image-path" style="margin-top: var(--spacing-xs); font-size: 0.9em; color: var(--text-secondary);"></p>
+                    </div>
+                    <input type="hidden" id="featured_image_url" name="featured_image_url">
+                    <small style="display: block; margin-top: var(--spacing-xs); color: var(--text-secondary);">
+                        Upload an image to save it in the repository
+                    </small>
                 </div>
 
                 <div class="form-group">
@@ -185,7 +193,20 @@
                 document.getElementById('slug').value = post.slug;
                 document.getElementById('excerpt').value = post.excerpt || '';
                 document.getElementById('content').value = post.content;
-                document.getElementById('featured_image_url').value = post.featured_image_url || '';
+                
+                // Handle featured image
+                const featuredImageUrl = post.featured_image_url || '';
+                document.getElementById('featured_image_url').value = featuredImageUrl;
+                if (featuredImageUrl) {
+                    // Show existing image preview
+                    const imagePreview = document.getElementById('image-preview');
+                    const previewImg = document.getElementById('preview-img');
+                    const imagePath = document.getElementById('image-path');
+                    previewImg.src = featuredImageUrl;
+                    imagePath.textContent = `Current image: ${featuredImageUrl}`;
+                    imagePreview.style.display = 'block';
+                }
+                
                 document.getElementById('status').value = post.status || 'draft';
                 document.getElementById('featured').checked = post.featured || false;
                 
@@ -216,6 +237,60 @@
             if (!document.getElementById('post-id').value) {
                 const slug = utils.slugify(e.target.value);
                 document.getElementById('slug').value = slug;
+            }
+        });
+
+        // Handle image upload
+        const imageInput = document.getElementById('featured_image');
+        const imagePreview = document.getElementById('image-preview');
+        const previewImg = document.getElementById('preview-img');
+        const imagePath = document.getElementById('image-path');
+        const imageUrlInput = document.getElementById('featured_image_url');
+
+        imageInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) {
+                imagePreview.style.display = 'none';
+                imageUrlInput.value = '';
+                return;
+            }
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                previewImg.src = event.target.result;
+                imagePreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+
+            // Upload file
+            try {
+                const uploadFormData = new FormData();
+                uploadFormData.append('file', file);
+                uploadFormData.append('context', 'blog');
+
+                const token = localStorage.getItem('access_token');
+                const apiUrl = window.API_URL || '';
+                const response = await fetch(`${apiUrl}/api/admin/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: uploadFormData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Upload failed');
+                }
+
+                const result = await response.json();
+                imageUrlInput.value = result.url; // Set the relative path
+                imagePath.textContent = `Saved to: ${result.path}`;
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                alert('Failed to upload image. Please try again.');
+                imageInput.value = '';
+                imagePreview.style.display = 'none';
             }
         });
 
