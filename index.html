@@ -30,7 +30,6 @@
                 <a href="index.html" class="logo">The Chris Dixon Brief</a>
                 <ul class="nav-menu">
                     <li><a href="index.html" class="nav-link">Home</a></li>
-                    <li><a href="#about" class="nav-link">About</a></li>
                     <li><a href="#contact" class="nav-link">Contact</a></li>
                     <li><a href="admin/login.html" class="nav-link">Admin</a></li>
                 </ul>
@@ -41,7 +40,7 @@
     <!-- Hero Section -->
     <section class="blog-hero">
         <div class="container">
-            <h1 class="blog-hero-title">Welcome to Our Blog</h1>
+            <h1 class="blog-hero-title">Welcome to The Chris Dixon Brief</h1>
             <p class="blog-hero-subtitle">Discover the latest articles, insights, and stories</p>
             
             <!-- Category Filters -->
@@ -87,19 +86,6 @@
         </div>
     </section>
 
-    <!-- Newsletter Section -->
-    <section class="newsletter-section">
-        <div class="container">
-            <h2>Subscribe to Our Newsletter</h2>
-            <p>Get the latest posts delivered to your inbox</p>
-            <form class="newsletter-form" id="newsletter-form">
-                <input type="email" placeholder="Enter your email" required>
-                <button type="submit" class="btn btn-primary">Subscribe</button>
-            </form>
-            <div id="newsletter-message"></div>
-        </div>
-    </section>
-
     <!-- Footer -->
     <footer style="padding: var(--spacing-xl) 0; text-align: center; color: var(--text-secondary); border-top: 1px solid var(--border-color); margin-top: var(--spacing-xl);">
         <div class="container">
@@ -109,27 +95,11 @@
 
     <!-- Scripts -->
     <script src="js/config.js"></script>
+    <script src="js/theme.js"></script>
     <script src="js/main.js"></script>
     <script src="js/blog.js"></script>
     
     <script>
-        // Newsletter subscription
-        document.getElementById('newsletter-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = e.target.querySelector('input[type="email"]').value;
-            const messageEl = document.getElementById('newsletter-message');
-            
-            try {
-                await api.subscribeNewsletter(email);
-                messageEl.textContent = 'Successfully subscribed!';
-                messageEl.style.color = 'var(--accent-color)';
-                e.target.reset();
-            } catch (error) {
-                console.error('Newsletter subscription error:', error);
-                messageEl.textContent = '';
-            }
-        });
-        
         // Load categories for filters
         async function loadCategories() {
             try {

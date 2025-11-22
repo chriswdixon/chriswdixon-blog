@@ -69,8 +69,20 @@ body {
     font-family: var(--font-family);
     color: var(--text-primary);
     background-color: var(--background-color);
+    background-image: 
+        radial-gradient(circle at 20% 30%, rgba(12, 113, 195, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 40% 80%, rgba(102, 126, 234, 0.03) 0%, transparent 50%);
+    background-attachment: fixed;
     line-height: 1.6;
     transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+[data-theme="dark"] body {
+    background-image: 
+        radial-gradient(circle at 20% 30%, rgba(43, 135, 218, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(12, 113, 195, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 40% 80%, rgba(102, 126, 234, 0.05) 0%, transparent 50%);
 }
 
 /* Container */
@@ -121,14 +133,32 @@ a:hover {
 }
 
 .btn-primary {
-    background-color: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
     color: white;
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+}
+
+.btn-primary:hover::before {
+    left: 100%;
 }
 
 .btn-primary:hover {
-    background-color: var(--primary-dark);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(12, 113, 195, 0.4);
 }
 
 .btn-secondary {
@@ -149,14 +179,31 @@ a:hover {
     right: 0;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 2px 10px rgba(12, 113, 195, 0.1);
     z-index: 1000;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 2px solid transparent;
+    background-image: linear-gradient(var(--background-color), var(--background-color)), 
+                      linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    transition: all var(--transition-base);
+}
+
+.navbar.scrolled {
+    box-shadow: 0 4px 20px rgba(12, 113, 195, 0.15);
 }
 
 [data-theme="dark"] .navbar {
     background: rgba(17, 24, 39, 0.95);
-    border-bottom-color: var(--border-color);
+    background-image: linear-gradient(var(--background-color), var(--background-color)), 
+                      linear-gradient(90deg, var(--primary-color), var(--primary-light));
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+}
+
+[data-theme="dark"] .navbar.scrolled {
+    background: rgba(17, 24, 39, 0.98);
+    box-shadow: 0 4px 20px rgba(12, 113, 195, 0.2);
 }
 
 .nav-wrapper {
@@ -169,7 +216,15 @@ a:hover {
 .logo {
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--text-primary);
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    transition: all var(--transition-base);
+}
+
+.logo:hover {
+    transform: scale(1.05);
 }
 
 .nav-menu {
@@ -186,6 +241,54 @@ a:hover {
 
 .nav-link:hover {
     color: var(--primary-color);
+}
+
+/* Theme Toggle */
+.theme-toggle-wrapper {
+    display: inline-flex;
+    align-items: center;
+}
+
+.theme-toggle-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    padding: 0;
+    font-size: 1.2rem;
+}
+
+.theme-toggle-btn:hover {
+    background: var(--background-alt);
+    border-color: var(--primary-color);
+    transform: scale(1.1);
+}
+
+.theme-icon {
+    display: inline-block;
+    transition: transform var(--transition-base);
+}
+
+.theme-icon-dark {
+    display: none;
+}
+
+.theme-icon-light {
+    display: inline;
+}
+
+[data-theme="light"] .theme-icon-dark {
+    display: inline;
+}
+
+[data-theme="light"] .theme-icon-light {
+    display: none;
 }
 
 /* Utilities */
