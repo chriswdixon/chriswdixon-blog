@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const comments = await api.getComments(postId);
 
       if (comments.length === 0) {
-        commentsContainer.innerHTML = '<p class="no-comments">No comments yet. Be the first to comment!</p>';
+        commentsContainer.innerHTML = '';
         return;
       }
 
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
       attachReplyHandlers();
     } catch (error) {
       console.error('Error loading comments:', error);
-      commentsContainer.innerHTML = '<p class="error">Error loading comments. Please try again later.</p>';
+      commentsContainer.innerHTML = '';
     }
   }
 
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
       loadComments();
     } catch (error) {
       console.error('Error posting comment:', error);
-      alert('Error posting comment. Please try again.');
+      // Error suppressed - no user notification
     } finally {
       submitButton.disabled = false;
       submitButton.textContent = 'Post Comment';
@@ -188,7 +188,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const content = formData.get('content');
 
     if (!authorName || !content) {
-      alert('Name and content are required');
       return;
     }
 
@@ -212,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
       loadComments();
     } catch (error) {
       console.error('Error posting reply:', error);
-      alert('Error posting reply. Please try again.');
+      // Error suppressed - no user notification
     } finally {
       submitButton.disabled = false;
       submitButton.textContent = 'Post Reply';

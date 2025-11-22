@@ -449,6 +449,15 @@
     border-radius: var(--radius-md);
 }
 
+/* Hide error and empty state messages */
+.no-posts,
+.no-comments,
+.error {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .featured-posts-grid,

@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       const posts = await api.getPosts({ featured: true, limit: 3 });
       if (posts.length === 0) {
-        featuredPostsContainer.innerHTML = '<p class="no-posts">No featured posts yet.</p>';
+        featuredPostsContainer.innerHTML = '';
         return;
       }
 
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
       `).join('');
     } catch (error) {
       console.error('Error loading featured posts:', error);
-      featuredPostsContainer.innerHTML = '<p class="error">Error loading featured posts.</p>';
+      featuredPostsContainer.innerHTML = '';
     }
   }
 
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       if (posts.length === 0 && !append) {
-        postsGridContainer.innerHTML = '<p class="no-posts">No posts found.</p>';
+        postsGridContainer.innerHTML = '';
         if (loadMoreBtn) loadMoreBtn.style.display = 'none';
         isLoading = false;
         return;
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (error) {
       console.error('Error loading posts:', error);
       if (!append) {
-        postsGridContainer.innerHTML = '<p class="error">Error loading posts. Please try again later.</p>';
+        postsGridContainer.innerHTML = '';
       }
     } finally {
       isLoading = false;

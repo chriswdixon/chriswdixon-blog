@@ -158,10 +158,9 @@ window.deletePost = async function(postId) {
   
   try {
     await api.request(`/api/admin/posts/${postId}`, 'DELETE');
-    showMessage('Post deleted successfully', 'success');
     loadPosts();
   } catch (error) {
-    showMessage('Error deleting post', 'error');
+    console.error('Error deleting post:', error);
   }
 };
 
@@ -175,20 +174,18 @@ window.deleteCategory = async function(categoryId) {
   
   try {
     await api.request(`/api/admin/categories/${categoryId}`, 'DELETE');
-    showMessage('Category deleted successfully', 'success');
     loadCategories();
   } catch (error) {
-    showMessage('Error deleting category', 'error');
+    console.error('Error deleting category:', error);
   }
 };
 
 window.approveComment = async function(commentId) {
   try {
     await api.request(`/api/admin/comments/${commentId}`, 'PUT', { status: 'approved' });
-    showMessage('Comment approved', 'success');
     loadComments();
   } catch (error) {
-    showMessage('Error approving comment', 'error');
+    console.error('Error approving comment:', error);
   }
 };
 
@@ -197,35 +194,15 @@ window.deleteComment = async function(commentId) {
   
   try {
     await api.request(`/api/admin/comments/${commentId}`, 'DELETE');
-    showMessage('Comment deleted', 'success');
     loadComments();
   } catch (error) {
-    showMessage('Error deleting comment', 'error');
+    console.error('Error deleting comment:', error);
   }
 };
 
 function showMessage(message, type = 'info') {
-  const toast = document.createElement('div');
-  toast.className = `toast toast-${type}`;
-  toast.textContent = message;
-  toast.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 1rem 1.5rem;
-    background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#0c71c3'};
-    color: white;
-    border-radius: 8px;
-    z-index: 10000;
-    animation: slideIn 0.3s ease-out;
-  `;
-  
-  document.body.appendChild(toast);
-  
-  setTimeout(() => {
-    toast.style.animation = 'slideOut 0.3s ease-out forwards';
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
+  // Messages suppressed - no user notifications
+  console.log(`[${type.toUpperCase()}] ${message}`);
 }
 
 function escapeHtml(text) {

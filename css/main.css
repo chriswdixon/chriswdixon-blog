@@ -196,11 +196,9 @@ a:hover {
 }
 
 .error {
-    color: var(--error-color);
-    padding: var(--spacing-md);
-    background: rgba(239, 68, 68, 0.1);
-    border-radius: var(--radius-md);
-    margin: var(--spacing-md) 0;
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
 }
 
 /* Responsive */
