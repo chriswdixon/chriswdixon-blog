@@ -9,7 +9,7 @@
 // - Production: 'https://your-site.netlify.app'
 // - Custom domain: 'https://api.yourdomain.com'
 
-window.API_URL = window.API_URL || '';
+window.API_URL = 'https://chriswdixonblog.netlify.app';
 
 // If API_URL is not set, try to auto-detect from current location
 if (!window.API_URL) {
