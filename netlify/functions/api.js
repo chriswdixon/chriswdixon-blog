@@ -67,6 +67,7 @@ const app = express();
 
 console.log('[API] Module loaded successfully');
 console.log('[API] Netlify Blobs available:', blobsAvailable);
+console.log('[API] DATABASE_URL configured:', !!process.env.DATABASE_URL);
 
 // Middleware
 app.use(cors({
@@ -82,6 +83,51 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+// Health check endpoint
+app.get('/api/health', async (req, res) => {
+  try {
+    // Test database connection
+    const testQuery = await dbQuery('SELECT NOW() as current_time');
+    res.json({ 
+      status: 'ok', 
+      database: 'connected',
+      timestamp: testQuery.rows[0].current_time,
+      tables: {
+        users: await checkTableExists('users'),
+        blog_categories: await checkTableExists('blog_categories'),
+        blog_tags: await checkTableExists('blog_tags'),
+        blog_posts: await checkTableExists('blog_posts'),
+        media_assets: await checkTableExists('media_assets')
+      }
+    });
+  } catch (error) {
+    console.error('[API] Health check error:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      database: 'disconnected',
+      error: error.message,
+      code: error.code
+    });
+  }
+});
+
+// Helper to check if table exists
+async function checkTableExists(tableName) {
+  try {
+    const result = await dbQuery(
+      `SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = $1
+      )`,
+      [tableName]
+    );
+    return result.rows[0].exists;
+  } catch (error) {
+    return false;
+  }
+}
 
 // File upload middleware
 const upload = multer({
