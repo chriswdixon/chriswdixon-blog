@@ -7,75 +7,12 @@
     padding: 140px 0 80px;
     text-align: center;
     position: relative;
-    background-image: url('https://images.unsplash.com/photo-1648071343677-fac075603d3c?q=80&w=2215&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
     overflow: hidden;
 }
 
-.blog-hero::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.4);
-    pointer-events: none;
-    z-index: 1;
-}
-
-[data-theme="dark"] .blog-hero::before {
-    background: rgba(0, 0, 0, 0.6);
-}
-
-.blog-hero::after {
-    content: "Life's Quirks";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(-5deg);
-    font-size: 12rem;
-    font-weight: 900;
-    color: rgba(255, 255, 255, 0.1);
-    white-space: nowrap;
-    pointer-events: none;
-    z-index: 0;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    font-family: var(--font-family);
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-}
-
-@media (max-width: 768px) {
-    .blog-hero::after {
-        font-size: 6rem;
-        transform: translate(-50%, -50%) rotate(-5deg);
-    }
-}
-
-@media (max-width: 480px) {
-    .blog-hero::after {
-        font-size: 4rem;
-    }
-}
-
-[data-theme="dark"] .blog-hero::after {
-    color: rgba(255, 255, 255, 0.08);
-}
-
-
 .blog-hero .container {
     position: relative;
-    z-index: 2;
-}
-
-@media (max-width: 768px) {
-    .blog-hero {
-        background-attachment: scroll;
-    }
+    z-index: 1;
 }
 
 .blog-hero-title {

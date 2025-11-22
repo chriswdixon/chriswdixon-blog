@@ -101,10 +101,44 @@ const upload = multer({
 });
 
 // Database connection
+if (!process.env.DATABASE_URL) {
+  console.error('[API] ERROR: DATABASE_URL environment variable is not set!');
+  console.error('[API] Please set DATABASE_URL in Netlify environment variables');
+}
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('sslmode=require') ? { rejectUnauthorized: false } : false
+  ssl: process.env.DATABASE_URL?.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
+  max: 10
 });
+
+// Test database connection on startup
+pool.on('error', (err) => {
+  console.error('[API] Unexpected database pool error:', err);
+});
+
+// Helper function to handle database queries with better error messages
+async function dbQuery(query, params = []) {
+  try {
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL environment variable is not set. Please configure it in Netlify environment variables.');
+    }
+    return await pool.query(query, params);
+  } catch (error) {
+    console.error('[API] Database query error:', error.message);
+    console.error('[API] Query:', query);
+    console.error('[API] Params:', params);
+    if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+      throw new Error('Database connection failed. Please check DATABASE_URL configuration.');
+    }
+    if (error.code === '42703' || error.code === '42P01') {
+      throw new Error('Database schema error. Please run migrations to create required tables.');
+    }
+    throw error;
+  }
+}
 
 // JWT secret
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -345,7 +379,7 @@ app.get('/api/blog/posts/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
     
-    const result = await pool.query(`
+    const result = await dbQuery(`
       SELECT 
         bp.*,
         bc.name as category_name,
@@ -379,7 +413,10 @@ app.get('/api/blog/posts/:slug', async (req, res) => {
     res.json(transformBlogPost(result.rows[0]));
   } catch (error) {
     console.error('Get post error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Failed to fetch post'
+    });
   }
 });
 
@@ -459,22 +496,28 @@ app.get('/api/blog/posts', async (req, res) => {
     query += ` LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
     params.push(parseInt(limit), offset);
 
-    const result = await pool.query(query, params);
+    const result = await dbQuery(query, params);
     res.json(result.rows.map(transformBlogPost));
   } catch (error) {
     console.error('Get posts error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Failed to fetch posts'
+    });
   }
 });
 
 // Get categories
 app.get('/api/blog/categories', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM blog_categories ORDER BY name ASC');
+    const result = await dbQuery('SELECT * FROM blog_categories ORDER BY name ASC');
     res.json(result.rows);
   } catch (error) {
     console.error('Get categories error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Failed to fetch categories'
+    });
   }
 });
 
