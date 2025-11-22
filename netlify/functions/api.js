@@ -128,14 +128,29 @@ async function dbQuery(query, params = []) {
     return await pool.query(query, params);
   } catch (error) {
     console.error('[API] Database query error:', error.message);
-    console.error('[API] Query:', query);
+    console.error('[API] Error code:', error.code);
+    console.error('[API] Error detail:', error.detail);
+    console.error('[API] Query:', query.substring(0, 200)); // Log first 200 chars
     console.error('[API] Params:', params);
+    
+    // Handle specific PostgreSQL error codes
     if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
       throw new Error('Database connection failed. Please check DATABASE_URL configuration.');
     }
-    if (error.code === '42703' || error.code === '42P01') {
-      throw new Error('Database schema error. Please run migrations to create required tables.');
+    if (error.code === '42703') {
+      throw new Error('Database schema error: Column does not exist. Please run migrations/schema.sql in your Neon.tech database.');
     }
+    if (error.code === '42P01') {
+      throw new Error('Database schema error: Table does not exist. Please run migrations/schema.sql in your Neon.tech SQL Editor.');
+    }
+    if (error.code === '28P01') {
+      throw new Error('Database authentication failed. Please check your DATABASE_URL credentials.');
+    }
+    if (error.code === '3D000') {
+      throw new Error('Database does not exist. Please check your DATABASE_URL.');
+    }
+    
+    // Re-throw with more context
     throw error;
   }
 }
@@ -500,9 +515,11 @@ app.get('/api/blog/posts', async (req, res) => {
     res.json(result.rows.map(transformBlogPost));
   } catch (error) {
     console.error('Get posts error:', error);
+    const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NETLIFY_DEV === 'true';
     res.status(500).json({ 
       error: 'Internal server error',
-      message: process.env.NODE_ENV === 'development' ? error.message : 'Failed to fetch posts'
+      message: isDevelopment ? error.message : 'Failed to fetch posts. Please check database setup.',
+      code: error.code || 'UNKNOWN'
     });
   }
 });
@@ -514,9 +531,11 @@ app.get('/api/blog/categories', async (req, res) => {
     res.json(result.rows);
   } catch (error) {
     console.error('Get categories error:', error);
+    const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NETLIFY_DEV === 'true';
     res.status(500).json({ 
       error: 'Internal server error',
-      message: process.env.NODE_ENV === 'development' ? error.message : 'Failed to fetch categories'
+      message: isDevelopment ? error.message : 'Failed to fetch categories. Please check database setup.',
+      code: error.code || 'UNKNOWN'
     });
   }
 });
