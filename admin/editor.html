@@ -369,9 +369,12 @@
                     } else {
                         // Create new tag
                         try {
-                            const newTag = await api.request('/api/admin/tags', 'POST', {
-                                name: tagName,
-                                slug: tagSlug
+                            const newTag = await api.request('/api/admin/tags', {
+                                method: 'POST',
+                                body: JSON.stringify({
+                                    name: tagName,
+                                    slug: tagSlug
+                                })
                             });
                             tagIds.push(newTag.id);
                             tags.push(newTag);
@@ -409,7 +412,11 @@
             };
 
             try {
-                await api.request('/api/admin/posts', 'POST', postData);
+                const result = await api.request('/api/admin/posts', {
+                    method: 'POST',
+                    body: JSON.stringify(postData)
+                });
+                console.log('Post saved successfully:', result);
                 messageEl.textContent = 'Post saved successfully!';
                 messageEl.style.color = 'var(--accent-color)';
                 
@@ -418,7 +425,10 @@
                 }, 1500);
             } catch (error) {
                 console.error('Error saving post:', error);
-                messageEl.textContent = '';
+                const errorMessage = error.message || error.error || 'Failed to save post. Please check the console for details.';
+                messageEl.textContent = `Error: ${errorMessage}`;
+                messageEl.style.color = 'var(--error-color, #dc3545)';
+                alert(`Error saving post: ${errorMessage}`);
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Save Post';
