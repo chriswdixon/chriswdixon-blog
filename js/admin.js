@@ -69,7 +69,9 @@ async function loadPosts() {
     const posts = await api.request('/api/admin/posts');
     
     if (posts.length === 0) {
-      container.innerHTML = '<p>No posts yet. <a href="editor.html">Create your first post!</a></p>';
+      const isInAdmin = window.location.pathname.includes('/admin/');
+      const editorPath = isInAdmin ? 'editor.html' : 'admin/editor.html';
+      container.innerHTML = `<p>No posts yet. <a href="${editorPath}">Create your first post!</a></p>`;
       return;
     }
 
@@ -81,7 +83,7 @@ async function loadPosts() {
         </div>
         <div class="post-actions">
           <a href="../post.html?slug=${post.slug}" target="_blank" class="btn-view">View</a>
-          <button onclick="editPost('${post.id}')" class="btn-edit">Edit</button>
+          <a href="editor.html?id=${post.id}" class="btn-edit">Edit</a>
           <button onclick="deletePost('${post.id}')" class="btn-delete">Delete</button>
         </div>
       </div>
@@ -164,7 +166,10 @@ async function loadComments() {
 
 // Global functions
 window.editPost = async function(postId) {
-  window.location.href = `admin/editor.html?id=${postId}`;
+  // Check if we're already in admin directory
+  const isInAdmin = window.location.pathname.includes('/admin/');
+  const editorPath = isInAdmin ? `editor.html?id=${postId}` : `admin/editor.html?id=${postId}`;
+  window.location.href = editorPath;
 };
 
 window.deletePost = async function(postId) {
