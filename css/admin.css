@@ -8,24 +8,22 @@ body.admin-page {
     /* Keep background image from main.css */
 }
 
-.admin-layout {
-    background: var(--background-color);
-}
-
 /* Admin Layout */
 .admin-layout {
     display: flex;
     min-height: 100vh;
+    background: transparent;
 }
 
 .admin-sidebar {
     width: 250px;
-    background: var(--background-alt);
+    background: rgba(229, 231, 235, 0.9);
     border-right: 1px solid var(--border-color);
     padding: var(--spacing-lg);
     position: fixed;
     height: 100vh;
     overflow-y: auto;
+    backdrop-filter: blur(2px);
 }
 
 .admin-main {
@@ -89,10 +87,11 @@ body.admin-page {
 }
 
 .stat-card {
-    background: var(--background-alt);
+    background: rgba(229, 231, 235, 0.9);
     padding: var(--spacing-lg);
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-color);
+    backdrop-filter: blur(2px);
 }
 
 .stat-card h3 {
@@ -109,10 +108,11 @@ body.admin-page {
 
 /* Admin Tables/Lists */
 .admin-list {
-    background: var(--background-alt);
+    background: rgba(229, 231, 235, 0.9);
     border-radius: var(--radius-lg);
     overflow: hidden;
     border: 1px solid var(--border-color);
+    backdrop-filter: blur(2px);
 }
 
 .post-item,
@@ -209,11 +209,12 @@ body.admin-page {
 
 /* Admin Forms */
 .admin-form {
-    background: var(--background-alt);
+    background: rgba(229, 231, 235, 0.9);
     padding: var(--spacing-xl);
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-color);
     max-width: 800px;
+    backdrop-filter: blur(2px);
 }
 
 .form-group {
@@ -260,12 +261,13 @@ body.admin-page {
 }
 
 .login-card {
-    background: var(--background-color);
+    background: rgba(229, 231, 235, 0.95);
     padding: var(--spacing-xl);
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-color);
     width: 100%;
     max-width: 400px;
+    backdrop-filter: blur(4px);
 }
 
 .login-card h1 {
@@ -334,7 +336,7 @@ body.admin-page {
 }
 
 .modal-content {
-    background: var(--background-color);
+    background: rgba(229, 231, 235, 0.95);
     border-radius: var(--radius-lg);
     padding: var(--spacing-xl);
     max-width: 600px;
@@ -342,6 +344,7 @@ body.admin-page {
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(4px);
 }
 
 .modal-header {
