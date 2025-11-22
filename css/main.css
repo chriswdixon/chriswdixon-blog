@@ -67,6 +67,7 @@ html {
 
 body {
     font-family: var(--font-family);
+    font-weight: 100;
     color: var(--text-primary);
     background-image: url('https://images.unsplash.com/photo-1648071343677-fac075603d3c?q=80&w=2215&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
     background-size: cover;
