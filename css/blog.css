@@ -214,6 +214,8 @@
 
 .post-card .post-content {
     padding: var(--spacing-md);
+    font-family: 'Roboto', sans-serif;
+    font-weight: 300;
 }
 
 .post-category {
