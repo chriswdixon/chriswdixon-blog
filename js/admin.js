@@ -60,13 +60,16 @@ async function loadDashboard() {
 
 async function loadPosts() {
   try {
-    const posts = await api.request('/api/admin/posts');
     const container = document.getElementById('posts-list');
-    
     if (!container) return;
 
+    // Show loading state
+    container.innerHTML = '<p>Loading posts...</p>';
+
+    const posts = await api.request('/api/admin/posts');
+    
     if (posts.length === 0) {
-      container.innerHTML = '<p>No posts yet. <a href="admin/editor.html">Create your first post!</a></p>';
+      container.innerHTML = '<p>No posts yet. <a href="editor.html">Create your first post!</a></p>';
       return;
     }
 
@@ -77,7 +80,7 @@ async function loadPosts() {
           <p>${post.category_name || 'Uncategorized'} • ${utils.formatDate(post.created_at)} • ${post.status}</p>
         </div>
         <div class="post-actions">
-          <a href="post.html?slug=${post.slug}" target="_blank" class="btn-view">View</a>
+          <a href="../post.html?slug=${post.slug}" target="_blank" class="btn-view">View</a>
           <button onclick="editPost('${post.id}')" class="btn-edit">Edit</button>
           <button onclick="deletePost('${post.id}')" class="btn-delete">Delete</button>
         </div>
@@ -85,6 +88,10 @@ async function loadPosts() {
     `).join('');
   } catch (error) {
     console.error('Error loading posts:', error);
+    const container = document.getElementById('posts-list');
+    if (container) {
+      container.innerHTML = `<p style="color: var(--error-color, #dc3545);">Error loading posts: ${error.message || 'Unknown error'}</p>`;
+    }
   }
 }
 

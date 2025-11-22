@@ -49,6 +49,7 @@
             <div class="admin-header">
                 <h1>Posts</h1>
                 <div style="display: flex; gap: var(--spacing-sm);">
+                    <button class="btn btn-secondary" onclick="refreshPosts()">Refresh</button>
                     <button class="btn btn-secondary" onclick="showCategoryModal()">New Category</button>
                     <a href="editor.html" class="btn btn-primary">New Post</a>
                 </div>
@@ -112,6 +113,22 @@
             api.logout();
             window.location.href = 'login.html';
         }
+
+        function refreshPosts() {
+            if (typeof loadPosts === 'function') {
+                loadPosts();
+            } else {
+                // Fallback: reload the page
+                window.location.reload();
+            }
+        }
+
+        // Auto-refresh posts when page becomes visible (e.g., after returning from editor)
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && typeof loadPosts === 'function') {
+                loadPosts();
+            }
+        });
 
         let editingCategoryId = null;
 
