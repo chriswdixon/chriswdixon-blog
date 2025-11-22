@@ -48,7 +48,10 @@
         <main class="admin-main">
             <div class="admin-header">
                 <h1>Posts</h1>
-                <a href="editor.html" class="btn btn-primary">New Post</a>
+                <div style="display: flex; gap: var(--spacing-sm);">
+                    <button class="btn btn-secondary" onclick="showCategoryModal()">New Category</button>
+                    <a href="editor.html" class="btn btn-primary">New Post</a>
+                </div>
             </div>
 
             <div id="admin-posts">
@@ -57,6 +60,46 @@
                 </div>
             </div>
         </main>
+
+        <!-- Category Modal -->
+        <div id="category-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="category-modal-title">New Category</h2>
+                    <button class="modal-close" onclick="closeCategoryModal()">&times;</button>
+                </div>
+                <form id="category-form" class="admin-form">
+                    <input type="hidden" id="category-id" name="id">
+                    
+                    <div class="form-group">
+                        <label for="category-name">Name *</label>
+                        <input type="text" id="category-name" name="name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category-slug">Slug (auto-generated from name)</label>
+                        <input type="text" id="category-slug" name="slug">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category-description">Description</label>
+                        <textarea id="category-description" name="description" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category-color">Color</label>
+                        <input type="color" id="category-color" name="color" value="#0c71c3">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save Category</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeCategoryModal()">Cancel</button>
+                    </div>
+
+                    <div id="category-message" style="margin-top: var(--spacing-md);"></div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts -->
@@ -69,6 +112,105 @@
             api.logout();
             window.location.href = 'login.html';
         }
+
+        let editingCategoryId = null;
+
+        function showCategoryModal(categoryId = null) {
+            editingCategoryId = categoryId;
+            const modal = document.getElementById('category-modal');
+            const form = document.getElementById('category-form');
+            const title = document.getElementById('category-modal-title');
+            
+            if (categoryId) {
+                title.textContent = 'Edit Category';
+                loadCategoryForEdit(categoryId);
+            } else {
+                title.textContent = 'New Category';
+                form.reset();
+                document.getElementById('category-id').value = '';
+                document.getElementById('category-color').value = '#0c71c3';
+            }
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeCategoryModal() {
+            document.getElementById('category-modal').style.display = 'none';
+            editingCategoryId = null;
+        }
+
+        async function loadCategoryForEdit(categoryId) {
+            try {
+                const categories = await api.request('/api/admin/categories');
+                const category = categories.find(c => c.id === categoryId);
+                
+                if (category) {
+                    document.getElementById('category-id').value = category.id;
+                    document.getElementById('category-name').value = category.name;
+                    document.getElementById('category-slug').value = category.slug;
+                    document.getElementById('category-description').value = category.description || '';
+                    document.getElementById('category-color').value = category.color || '#0c71c3';
+                }
+            } catch (error) {
+                console.error('Error loading category:', error);
+            }
+        }
+
+        // Auto-generate slug from name
+        document.getElementById('category-name').addEventListener('input', (e) => {
+            if (!document.getElementById('category-id').value) {
+                const slug = utils.slugify(e.target.value);
+                document.getElementById('category-slug').value = slug;
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('category-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const messageEl = document.getElementById('category-message');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+            messageEl.textContent = '';
+
+            const formData = new FormData(e.target);
+            const categoryData = {
+                id: formData.get('id') || null,
+                name: formData.get('name'),
+                slug: formData.get('slug') || utils.slugify(formData.get('name')),
+                description: formData.get('description'),
+                color: formData.get('color')
+            };
+
+            try {
+                await api.request('/api/admin/categories', 'POST', categoryData);
+                messageEl.textContent = 'Category saved successfully!';
+                messageEl.style.color = 'var(--accent-color)';
+                
+                setTimeout(() => {
+                    closeCategoryModal();
+                    // Reload categories if on categories page, otherwise just close
+                    if (typeof loadCategories === 'function') {
+                        loadCategories();
+                    }
+                }, 1000);
+            } catch (error) {
+                console.error('Error saving category:', error);
+                messageEl.textContent = 'Error saving category. Please try again.';
+                messageEl.style.color = 'var(--error-color, #dc3545)';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Category';
+            }
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('category-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'category-modal') {
+                closeCategoryModal();
+            }
+        });
     </script>
 </body>
 </html>

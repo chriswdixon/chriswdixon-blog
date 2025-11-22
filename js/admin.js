@@ -112,6 +112,13 @@ async function loadCategories() {
         </div>
       </div>
     `).join('');
+    
+    // Make editCategory available globally if modal exists
+    if (typeof showCategoryModal === 'function') {
+      window.editCategory = function(categoryId) {
+        showCategoryModal(categoryId);
+      };
+    }
   } catch (error) {
     console.error('Error loading categories:', error);
   }
@@ -165,8 +172,13 @@ window.deletePost = async function(postId) {
 };
 
 window.editCategory = async function(categoryId) {
-  // Open category editor modal or navigate
-  showMessage('Category editor coming soon', 'info');
+  // Open category editor modal
+  if (typeof showCategoryModal === 'function') {
+    showCategoryModal(categoryId);
+  } else {
+    // Fallback if modal not available (e.g., on posts page)
+    showMessage('Please edit categories from the Categories page', 'info');
+  }
 };
 
 window.deleteCategory = async function(categoryId) {
