@@ -335,7 +335,8 @@
 
 /* Post Detail Page */
 .post-detail {
-    padding: var(--spacing-xl) 0;
+    padding: 140px 0 var(--spacing-xl);
+    margin-top: 0;
 }
 
 .post-detail-header {
