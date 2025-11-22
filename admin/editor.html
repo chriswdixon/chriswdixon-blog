@@ -120,6 +120,9 @@
                 <div class="form-group">
                     <label for="published_at">Published At</label>
                     <input type="datetime-local" id="published_at" name="published_at">
+                    <small style="display: block; margin-top: var(--spacing-xs); color: var(--text-secondary);">
+                        Auto-set when status is changed to "Published"
+                    </small>
                 </div>
 
                 <div class="form-actions">
@@ -246,6 +249,11 @@
                     const date = new Date(post.published_at);
                     const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
                     document.getElementById('published_at').value = localDate.toISOString().slice(0, 16);
+                } else if (post.status === 'published' && !post.published_at) {
+                    // Auto-set published_at if status is published but date is missing
+                    const now = new Date();
+                    const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+                    document.getElementById('published_at').value = localDate.toISOString().slice(0, 16);
                 }
 
                 await loadCategories();
@@ -269,6 +277,16 @@
             if (!document.getElementById('post-id').value) {
                 const slug = utils.slugify(e.target.value);
                 document.getElementById('slug').value = slug;
+            }
+        });
+
+        // Auto-set published_at when status changes to published
+        document.getElementById('status').addEventListener('change', (e) => {
+            const publishedAtInput = document.getElementById('published_at');
+            if (e.target.value === 'published' && !publishedAtInput.value) {
+                const now = new Date();
+                const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+                publishedAtInput.value = localDate.toISOString().slice(0, 16);
             }
         });
 
