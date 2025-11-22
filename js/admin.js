@@ -19,10 +19,14 @@ async function initAdmin() {
   // Load dashboard stats
   if (document.getElementById('admin-dashboard')) {
     await loadDashboard();
+    // Also load recent posts for dashboard
+    if (document.getElementById('posts-list')) {
+      await loadPosts();
+    }
   }
 
   // Load posts management
-  if (document.getElementById('admin-posts')) {
+  if (document.getElementById('admin-posts') || document.getElementById('posts-list')) {
     await loadPosts();
   }
 
@@ -74,19 +78,39 @@ async function loadPosts() {
       return;
     }
 
-    container.innerHTML = posts.map(post => `
+    // Limit to 5 most recent posts on dashboard
+    const isDashboard = document.getElementById('admin-dashboard') && !document.getElementById('admin-posts');
+    const displayPosts = isDashboard ? posts.slice(0, 5) : posts;
+
+    container.innerHTML = displayPosts.map(post => {
+      const isInAdmin = window.location.pathname.includes('/admin/');
+      const viewPath = isInAdmin ? `../post.html?slug=${post.slug}` : `post.html?slug=${post.slug}`;
+      const editPath = isInAdmin ? `editor.html?id=${post.id}` : `admin/editor.html?id=${post.id}`;
+      
+      return `
       <div class="post-item">
         <div class="post-info">
           <h3>${escapeHtml(post.title)}</h3>
           <p>${post.category_name || 'Uncategorized'} • ${utils.formatDate(post.created_at)} • ${post.status}</p>
         </div>
         <div class="post-actions">
-          <a href="../post.html?slug=${post.slug}" target="_blank" class="btn-view">View</a>
-          <a href="editor.html?id=${post.id}" class="btn-edit">Edit</a>
-          <button onclick="deletePost('${post.id}')" class="btn-delete">Delete</button>
+          <a href="${viewPath}" target="_blank" class="btn-view">View</a>
+          <a href="${editPath}" class="btn-edit">Edit</a>
+          ${!isDashboard ? `<button onclick="deletePost('${post.id}')" class="btn-delete">Delete</button>` : ''}
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
+
+    // Add "View All Posts" link on dashboard if there are more posts
+    if (isDashboard && posts.length > 5) {
+      const viewAllLink = document.createElement('div');
+      viewAllLink.style.padding = 'var(--spacing-md)';
+      viewAllLink.style.textAlign = 'center';
+      viewAllLink.style.borderTop = '1px solid var(--border-color)';
+      viewAllLink.innerHTML = `<a href="posts.html" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">View All Posts (${posts.length})</a>`;
+      container.appendChild(viewAllLink);
+    }
   } catch (error) {
     console.error('Error loading posts:', error);
     const container = document.getElementById('posts-list');

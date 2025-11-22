@@ -61,30 +61,73 @@ const ThemeManager = {
         let toggleBtn = document.getElementById('theme-toggle');
         
         if (!toggleBtn) {
-            // Find navigation menu
-            const navMenu = document.querySelector('.nav-menu');
+            // Check if we're on an admin page
+            const isAdminPage = document.body.classList.contains('admin-page');
             
-            if (navMenu) {
-                // Create toggle button
-                toggleBtn = document.createElement('li');
-                toggleBtn.id = 'theme-toggle';
-                toggleBtn.className = 'theme-toggle-wrapper';
-                toggleBtn.innerHTML = `
-                    <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle theme">
-                        <span class="theme-icon theme-icon-dark">🌙</span>
-                        <span class="theme-icon theme-icon-light">☀️</span>
-                    </button>
-                `;
+            if (isAdminPage) {
+                // For admin pages, add to sidebar or header
+                const adminSidebar = document.querySelector('.admin-sidebar');
+                const adminHeader = document.querySelector('.admin-header');
                 
-                // Insert before last item (usually Admin link)
-                navMenu.appendChild(toggleBtn);
+                if (adminSidebar) {
+                    // Add to sidebar after the h2
+                    const sidebarTitle = adminSidebar.querySelector('h2');
+                    if (sidebarTitle) {
+                        toggleBtn = document.createElement('div');
+                        toggleBtn.id = 'theme-toggle';
+                        toggleBtn.className = 'admin-theme-toggle';
+                        toggleBtn.innerHTML = `
+                            <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle theme" style="width: 100%; justify-content: center;">
+                                <span class="theme-icon theme-icon-dark">🌙</span>
+                                <span class="theme-icon theme-icon-light">☀️</span>
+                                <span style="margin-left: 0.5rem;">Toggle Theme</span>
+                            </button>
+                        `;
+                        sidebarTitle.insertAdjacentElement('afterend', toggleBtn);
+                    }
+                } else if (adminHeader) {
+                    // Add to header if no sidebar
+                    toggleBtn = document.createElement('div');
+                    toggleBtn.id = 'theme-toggle';
+                    toggleBtn.className = 'admin-theme-toggle';
+                    toggleBtn.innerHTML = `
+                        <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle theme">
+                            <span class="theme-icon theme-icon-dark">🌙</span>
+                            <span class="theme-icon theme-icon-light">☀️</span>
+                        </button>
+                    `;
+                    adminHeader.appendChild(toggleBtn);
+                }
+            } else {
+                // For public pages, add to navigation menu
+                const navMenu = document.querySelector('.nav-menu');
                 
-                // Add click handler
+                if (navMenu) {
+                    // Create toggle button
+                    toggleBtn = document.createElement('li');
+                    toggleBtn.id = 'theme-toggle';
+                    toggleBtn.className = 'theme-toggle-wrapper';
+                    toggleBtn.innerHTML = `
+                        <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle theme">
+                            <span class="theme-icon theme-icon-dark">🌙</span>
+                            <span class="theme-icon theme-icon-light">☀️</span>
+                        </button>
+                    `;
+                    
+                    // Insert before last item (usually Admin link)
+                    navMenu.appendChild(toggleBtn);
+                }
+            }
+            
+            // Add click handler if button was created
+            if (toggleBtn) {
                 const btn = toggleBtn.querySelector('#theme-toggle-btn');
-                btn.addEventListener('click', () => this.toggle());
-                
-                // Update icon based on current theme
-                this.updateToggleIcon(this.getTheme());
+                if (btn) {
+                    btn.addEventListener('click', () => this.toggle());
+                    
+                    // Update icon based on current theme
+                    this.updateToggleIcon(this.getTheme());
+                }
             }
         }
     },
