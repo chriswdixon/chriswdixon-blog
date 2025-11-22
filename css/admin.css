@@ -3,7 +3,11 @@
    ============================================ */
 
 /* Admin Body Background */
-body.admin-page,
+body.admin-page {
+    background-color: var(--background-color);
+    /* Keep background image from main.css */
+}
+
 .admin-layout {
     background: var(--background-color);
 }
