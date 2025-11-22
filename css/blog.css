@@ -109,7 +109,7 @@
 /* Posts Grid */
 .posts-section {
     padding: var(--spacing-xl) 0;
-    background: var(--background-alt);
+    background: transparent;
     position: relative;
 }
 
@@ -167,12 +167,18 @@
 }
 
 .post-card {
-    background: var(--background-alt);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
     border-radius: var(--radius-lg);
     overflow: hidden;
-    transition: transform var(--transition-base), box-shadow var(--transition-base);
-    border: 1px solid var(--border-color);
+    transition: transform var(--transition-base), box-shadow var(--transition-base), background var(--transition-base);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     position: relative;
+}
+
+[data-theme="dark"] .post-card {
+    background: rgba(26, 26, 26, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .post-card::before {
@@ -189,7 +195,12 @@
 
 .post-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(12, 113, 195, 0.2);
+    box-shadow: 0 10px 25px rgba(12, 113, 195, 0.3);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="dark"] .post-card:hover {
+    background: rgba(26, 26, 26, 0.4);
 }
 
 .post-card:hover::before {
