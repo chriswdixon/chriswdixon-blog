@@ -13,9 +13,25 @@ class ApiClient {
     this.baseUrl = baseUrl || API_URL || '';
   }
 
-  async request(endpoint, options = {}) {
+  async request(endpoint, methodOrOptions = {}, data = null) {
     const url = `${this.baseUrl}${endpoint}`;
     const token = localStorage.getItem('access_token');
+    
+    // Handle both formats: request(endpoint, options) or request(endpoint, method, data)
+    let options = {};
+    if (typeof methodOrOptions === 'string') {
+      // Called as request(endpoint, method, data)
+      options = {
+        method: methodOrOptions,
+        body: data ? JSON.stringify(data) : undefined
+      };
+    } else {
+      // Called as request(endpoint, options)
+      options = { ...methodOrOptions };
+      if (options.body && typeof options.body === 'object') {
+        options.body = JSON.stringify(options.body);
+      }
+    }
     
     const headers = {
       'Content-Type': 'application/json',

@@ -1129,24 +1129,64 @@ app.get('/api/admin/categories', authenticateToken, async (req, res) => {
 app.post('/api/admin/categories', authenticateToken, async (req, res) => {
   try {
     const { id, name, slug: providedSlug, description, color } = req.body;
+    
+    // Validate required fields
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Category name is required' });
+    }
+    
     const slug = providedSlug || slugify(name);
+    
+    if (!slug || !slug.trim()) {
+      return res.status(400).json({ error: 'Category slug is required' });
+    }
 
-    if (id) {
+    // Handle empty string as null for id
+    const categoryId = id && id.trim() !== '' ? id : null;
+
+    if (categoryId) {
+      // Update existing category
       const result = await pool.query(
         'UPDATE blog_categories SET name = $1, slug = $2, description = $3, color = $4 WHERE id = $5 RETURNING *',
-        [name, slug, description, color, id]
+        [name.trim(), slug.trim(), description ? description.trim() : null, color || '#0c71c3', categoryId]
       );
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+      
       res.json(result.rows[0]);
     } else {
+      // Create new category - check for duplicate slug first
+      const existing = await pool.query(
+        'SELECT id FROM blog_categories WHERE slug = $1',
+        [slug.trim()]
+      );
+      
+      if (existing.rows.length > 0) {
+        return res.status(409).json({ error: 'A category with this slug already exists' });
+      }
+      
       const result = await pool.query(
         'INSERT INTO blog_categories (name, slug, description, color) VALUES ($1, $2, $3, $4) RETURNING *',
-        [name, slug, description, color]
+        [name.trim(), slug.trim(), description ? description.trim() : null, color || '#0c71c3']
       );
       res.status(201).json(result.rows[0]);
     }
   } catch (error) {
     console.error('Save category error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    
+    // Handle unique constraint violations
+    if (error.code === '23505') { // PostgreSQL unique violation
+      return res.status(409).json({ error: 'A category with this name or slug already exists' });
+    }
+    
+    // Handle foreign key violations
+    if (error.code === '23503') {
+      return res.status(400).json({ error: 'Invalid category reference' });
+    }
+    
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 

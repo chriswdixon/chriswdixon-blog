@@ -174,8 +174,9 @@
             messageEl.textContent = '';
 
             const formData = new FormData(e.target);
+            const categoryId = formData.get('id');
             const categoryData = {
-                id: formData.get('id') || null,
+                id: categoryId && categoryId.trim() !== '' ? categoryId : null,
                 name: formData.get('name'),
                 slug: formData.get('slug') || utils.slugify(formData.get('name')),
                 description: formData.get('description'),
@@ -183,7 +184,8 @@
             };
 
             try {
-                await api.request('/api/admin/categories', 'POST', categoryData);
+                const response = await api.request('/api/admin/categories', 'POST', categoryData);
+                console.log('Category saved successfully:', response);
                 messageEl.textContent = 'Category saved successfully!';
                 messageEl.style.color = 'var(--accent-color)';
                 
@@ -193,7 +195,8 @@
                 }, 1000);
             } catch (error) {
                 console.error('Error saving category:', error);
-                messageEl.textContent = 'Error saving category. Please try again.';
+                const errorMessage = error.message || error.error || 'Error saving category. Please try again.';
+                messageEl.textContent = errorMessage;
                 messageEl.style.color = 'var(--error-color, #dc3545)';
             } finally {
                 submitBtn.disabled = false;
