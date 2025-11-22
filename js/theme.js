@@ -80,7 +80,6 @@ const ThemeManager = {
                             <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle theme" style="width: 100%; justify-content: center;">
                                 <span class="theme-icon theme-icon-dark">🌙</span>
                                 <span class="theme-icon theme-icon-light">☀️</span>
-                                <span style="margin-left: 0.5rem;">Toggle Theme</span>
                             </button>
                         `;
                         sidebarTitle.insertAdjacentElement('afterend', toggleBtn);

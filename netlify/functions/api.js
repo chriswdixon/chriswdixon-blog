@@ -384,15 +384,28 @@ function buildMediaUrl(assetId) {
 function transformBlogPost(row) {
   if (!row) return row;
   const assetId = row.featured_image_asset_id || null;
-  // If we have a featured_image_url that starts with /, it's a repo path - use as-is
+  const githubRepo = process.env.GITHUB_REPO || 'chriswdixon/chriswdixon-blog';
+  const githubBranch = process.env.GITHUB_BRANCH || 'main';
+  
+  // If we have a featured_image_url that starts with /, it's a repo path - convert to GitHub raw URL
   // Otherwise, if we have an assetId, use the media URL
   // Otherwise, use the featured_image_url directly
   let resolvedUrl = row.featured_image_url;
   if (assetId && !row.featured_image_url) {
     resolvedUrl = buildMediaUrl(assetId);
-  } else if (row.featured_image_url && !row.featured_image_url.startsWith('/') && !row.featured_image_url.startsWith('http')) {
-    // If it's a relative path without leading slash, add it
-    resolvedUrl = row.featured_image_url.startsWith('assets/') ? '/' + row.featured_image_url : row.featured_image_url;
+  } else if (row.featured_image_url) {
+    // If it's an absolute path starting with /assets/images/posts/, convert to GitHub raw URL
+    if (row.featured_image_url.startsWith('/assets/images/posts/')) {
+      const imagePath = row.featured_image_url.substring(1); // Remove leading slash
+      resolvedUrl = `https://raw.githubusercontent.com/${githubRepo}/${githubBranch}/${imagePath}`;
+    } else if (row.featured_image_url.startsWith('assets/images/posts/')) {
+      // If it's a relative path without leading slash, convert to GitHub raw URL
+      resolvedUrl = `https://raw.githubusercontent.com/${githubRepo}/${githubBranch}/${row.featured_image_url}`;
+    } else if (!row.featured_image_url.startsWith('http') && !row.featured_image_url.startsWith('/')) {
+      // If it's a relative path without leading slash and not already assets/, add it
+      resolvedUrl = row.featured_image_url.startsWith('assets/') ? '/' + row.featured_image_url : row.featured_image_url;
+    }
+    // If it already starts with http, use as-is
   }
   
   return {
