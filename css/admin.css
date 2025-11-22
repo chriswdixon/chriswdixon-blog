@@ -228,6 +228,11 @@ body.admin-page {
     color: var(--text-primary);
 }
 
+.form-group label input[type="checkbox"] {
+    margin-right: 0.5rem;
+    vertical-align: middle;
+}
+
 .form-group input,
 .form-group textarea,
 .form-group select {
