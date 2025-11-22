@@ -156,6 +156,9 @@ async function loadCategories() {
   }
 }
 
+// Make loadCategories globally available
+window.loadCategories = loadCategories;
+
 async function loadComments() {
   try {
     const comments = await api.request('/api/admin/comments?status=pending');
