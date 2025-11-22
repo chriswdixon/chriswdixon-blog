@@ -45,7 +45,6 @@ async function loadDashboard() {
       'stats-posts': stats.posts,
       'stats-views': stats.views || 0,
       'stats-categories': stats.categories,
-      'stats-subscribers': stats.subscribers,
       'stats-pending-comments': stats.pending_comments || 0
     };
 
