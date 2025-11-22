@@ -91,7 +91,7 @@ async function loadPosts() {
       <div class="post-item">
         <div class="post-info">
           <h3>${escapeHtml(post.title)}</h3>
-          <p>${post.category_name || 'Uncategorized'} • ${utils.formatDate(post.created_at)} • ${post.status}</p>
+          <p>${post.category_name || 'Uncategorized'} • ${utils.formatDate(post.created_at)} • ${post.status} • ${post.view_count || 0} views</p>
         </div>
         <div class="post-actions">
           <a href="${viewPath}" target="_blank" class="btn-view">View</a>

@@ -109,7 +109,6 @@ document.addEventListener('DOMContentLoaded', function() {
             ${post.excerpt ? `<p class="post-excerpt">${post.excerpt}</p>` : ''}
             <div class="post-meta">
               ${post.published_at ? `<time>${utils.formatDate(post.published_at)}</time>` : ''}
-              ${post.view_count ? `<span class="views">${post.view_count} views</span>` : ''}
             </div>
           </div>
         </article>
@@ -196,7 +195,6 @@ document.addEventListener('DOMContentLoaded', function() {
         ` : ''}
         <div class="post-meta">
           ${post.published_at ? `<time>${utils.formatDate(post.published_at)}</time>` : ''}
-          ${post.view_count ? `<span class="views">${post.view_count} views</span>` : ''}
         </div>
       </div>
     `;

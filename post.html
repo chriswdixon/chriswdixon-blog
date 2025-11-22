@@ -119,7 +119,6 @@
                 metaEl.innerHTML = `
                     ${post.category_name ? `<span class="post-category" style="background-color: ${post.category_color || '#0c71c3'}">${post.category_name}</span>` : ''}
                     ${post.published_at ? `<time>${utils.formatDate(post.published_at)}</time>` : ''}
-                    ${post.view_count ? `<span class="views">${post.view_count} views</span>` : ''}
                 `;
                 
                 // Set image
