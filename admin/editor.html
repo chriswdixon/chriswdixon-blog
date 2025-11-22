@@ -16,6 +16,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- EasyMDE Markdown Editor -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
 </head>
 <body>
     <div class="admin-layout">
@@ -137,6 +141,29 @@
         let editingPostId = null;
         let categories = [];
         let tags = [];
+        let easyMDE = null;
+        
+        // Initialize EasyMDE
+        function initEasyMDE() {
+            easyMDE = new EasyMDE({
+                element: document.getElementById('content'),
+                spellChecker: false,
+                autosave: {
+                    enabled: false
+                },
+                placeholder: 'Write your post content in Markdown...',
+                toolbar: [
+                    'bold', 'italic', 'strikethrough', '|',
+                    'heading-1', 'heading-2', 'heading-3', '|',
+                    'code', 'quote', 'unordered-list', 'ordered-list', '|',
+                    'link', 'image', 'table', '|',
+                    'preview', 'side-by-side', 'fullscreen', '|',
+                    'guide'
+                ],
+                minHeight: '400px',
+                status: ['lines', 'words', 'cursor']
+            });
+        }
 
         // Load categories
         async function loadCategories() {
@@ -192,7 +219,12 @@
                 document.getElementById('title').value = post.title;
                 document.getElementById('slug').value = post.slug;
                 document.getElementById('excerpt').value = post.excerpt || '';
-                document.getElementById('content').value = post.content;
+                // Set EasyMDE content
+                if (easyMDE) {
+                    easyMDE.value(post.content || '');
+                } else {
+                    document.getElementById('content').value = post.content;
+                }
                 
                 // Handle featured image
                 const featuredImageUrl = post.featured_image_url || '';
@@ -332,12 +364,15 @@
                 }
             }
 
+            // Get content from EasyMDE if available, otherwise from textarea
+            const content = easyMDE ? easyMDE.value() : formData.get('content');
+            
             const postData = {
                 id: formData.get('id') || null,
                 title: formData.get('title'),
                 slug: formData.get('slug') || utils.slugify(formData.get('title')),
                 excerpt: formData.get('excerpt'),
-                content: formData.get('content'),
+                content: content,
                 featured_image_url: formData.get('featured_image_url'),
                 category_id: formData.get('category_id') || null,
                 status: formData.get('status'),
@@ -368,7 +403,16 @@
             window.location.href = 'login.html';
         }
 
-        loadPost();
+        // Initialize EasyMDE when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                initEasyMDE();
+                loadPost();
+            });
+        } else {
+            initEasyMDE();
+            loadPost();
+        }
     </script>
 </body>
 </html>
