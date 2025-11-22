@@ -1021,6 +1021,21 @@ app.post('/api/admin/posts', authenticateToken, async (req, res) => {
 
       res.json(transformBlogPost(result.rows[0]));
     } else {
+      console.log('[POST /api/admin/posts] Creating new post');
+      console.log('[POST /api/admin/posts] Insert values:', {
+        title,
+        slug,
+        excerpt: excerpt ? excerpt.substring(0, 50) + '...' : null,
+        content: content ? content.substring(0, 50) + '...' : null,
+        resolvedImageUrl,
+        featuredImageAssetId,
+        category_id,
+        status,
+        featured,
+        published_at,
+        author_id: req.user.id
+      });
+      
       const result = await pool.query(
         `INSERT INTO blog_posts 
          (title, slug, excerpt, content, featured_image_url, featured_image_asset_id, category_id, status, featured, published_at, author_id)
@@ -1029,17 +1044,19 @@ app.post('/api/admin/posts', authenticateToken, async (req, res) => {
         [
           title,
           slug,
-          excerpt,
+          excerpt || null,
           content,
           resolvedImageUrl || null,
           featuredImageAssetId,
-          category_id,
-          status,
-          featured,
-          published_at,
+          category_id || null,
+          status || 'draft',
+          featured || false,
+          published_at || null,
           req.user.id
         ]
       );
+      
+      console.log('[POST /api/admin/posts] Insert result:', result.rows.length > 0 ? 'Success' : 'No rows returned');
 
       const newPost = transformBlogPost(result.rows[0]);
 
@@ -1055,11 +1072,21 @@ app.post('/api/admin/posts', authenticateToken, async (req, res) => {
         }
       }
 
+      console.log('[POST /api/admin/posts] Post created successfully:', newPost.id);
       res.status(201).json(newPost);
     }
   } catch (error) {
-    console.error('Save post error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('[POST /api/admin/posts] Error details:', {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      constraint: error.constraint,
+      stack: error.stack
+    });
+    res.status(500).json({ 
+      error: error.message || 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
