@@ -369,27 +369,61 @@ app.post('/api/auth/login', [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.error('[LOGIN] Validation errors:', errors.array());
       return res.status(400).json({ error: 'Invalid email or password' });
     }
 
     const { email, password } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    console.log('[LOGIN] Attempting login for:', normalizedEmail);
+    console.log('[LOGIN] Password provided:', !!password, 'Length:', password ? password.length : 0);
 
-    const result = await pool.query(
-      'SELECT id, email, password_hash, name, role, created_at FROM users WHERE email = $1',
-      [email]
+    // Try to select with all possible columns, handle missing columns gracefully
+    // Try both exact match and case-insensitive match
+    let result = await dbQuery(
+      'SELECT id, email, password_hash, created_at, name, role FROM users WHERE LOWER(email) = LOWER($1)',
+      [normalizedEmail]
     );
+    
+    if (result.rows.length === 0) {
+      // Try exact match as fallback
+      result = await dbQuery(
+        'SELECT id, email, password_hash, created_at, name, role FROM users WHERE email = $1',
+        [normalizedEmail]
+      );
+    }
 
     if (result.rows.length === 0) {
+      console.error('[LOGIN] User not found:', email);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     const user = result.rows[0];
-    const validPassword = await bcrypt.compare(password, user.password_hash);
     
-    if (!validPassword) {
+    if (!user.password_hash) {
+      console.error('[LOGIN] User found but password_hash is missing:', email);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    console.log('[LOGIN] User found:', {
+      email: user.email,
+      hash_length: user.password_hash ? user.password_hash.length : 0,
+      hash_preview: user.password_hash ? user.password_hash.substring(0, 20) + '...' : 'NULL'
+    });
+    
+    console.log('[LOGIN] Comparing password for:', normalizedEmail);
+    const validPassword = await bcrypt.compare(password, user.password_hash);
+    
+    console.log('[LOGIN] Password comparison result:', validPassword);
+    
+    if (!validPassword) {
+      console.error('[LOGIN] Password mismatch for:', normalizedEmail);
+      console.error('[LOGIN] Hash in DB:', user.password_hash ? user.password_hash.substring(0, 30) + '...' : 'NULL');
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    console.log('[LOGIN] Password valid, generating token for:', email);
     const token = jwt.sign(
       { id: user.id, email: user.email },
       JWT_SECRET,
@@ -400,15 +434,68 @@ app.post('/api/auth/login', [
       user: {
         id: user.id,
         email: user.email,
-        name: user.name,
-        role: user.role,
+        name: user.name || null,
+        role: user.role || 'admin',
         created_at: user.created_at
       },
       access_token: token
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('[LOGIN] Error:', error.message);
+    console.error('[LOGIN] Full error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Test endpoint to check if user exists (for debugging)
+// Usage: /api/auth/test-user?email=chriswdixon@gmail.com
+app.get('/api/auth/test-user', async (req, res) => {
+  try {
+    const email = req.query.email || 'chriswdixon@gmail.com';
+    
+    console.log('[TEST USER] Checking user:', email);
+    
+    const result = await dbQuery(
+      'SELECT id, email, password_hash, name, role, created_at FROM users WHERE email = $1',
+      [email]
+    );
+
+    console.log('[TEST USER] Query result rows:', result.rows.length);
+
+    if (result.rows.length === 0) {
+      console.log('[TEST USER] User not found:', email);
+      return res.json({ 
+        exists: false, 
+        message: 'User not found in database',
+        email: email,
+        action: 'Run the SQL script to create the user'
+      });
+    }
+
+    const user = result.rows[0];
+    const hashLength = user.password_hash ? user.password_hash.length : 0;
+    
+    console.log('[TEST USER] User found:', {
+      email: user.email,
+      has_password: !!user.password_hash,
+      hash_length: hashLength
+    });
+    
+    res.json({
+      exists: true,
+      email: user.email,
+      has_password: !!user.password_hash,
+      password_hash_length: hashLength,
+      password_hash_preview: user.password_hash ? user.password_hash.substring(0, 20) + '...' : null,
+      name: user.name,
+      role: user.role,
+      created_at: user.created_at,
+      status: hashLength === 60 ? '✅ Password hash looks correct' : hashLength < 50 ? '❌ Password hash too short' : '⚠️ Unexpected hash length'
+    });
+  } catch (error) {
+    console.error('[TEST USER] Error:', error);
+    console.error('[TEST USER] Error stack:', error.stack);
+    res.status(500).json({ error: error.message, stack: error.stack });
   }
 });
 
