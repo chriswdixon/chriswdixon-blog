@@ -411,11 +411,18 @@
                 tags: tagIds
             };
 
+            console.log('Saving post with data:', postData);
+            console.log('API URL:', window.API_URL);
+            console.log('Auth token present:', !!localStorage.getItem('access_token'));
+
             try {
-                const result = await api.request('/api/admin/posts', {
+                const requestOptions = {
                     method: 'POST',
                     body: JSON.stringify(postData)
-                });
+                };
+                console.log('Request options:', requestOptions);
+                
+                const result = await api.request('/api/admin/posts', requestOptions);
                 console.log('Post saved successfully:', result);
                 messageEl.textContent = 'Post saved successfully!';
                 messageEl.style.color = 'var(--accent-color)';

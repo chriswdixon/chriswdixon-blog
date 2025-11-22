@@ -941,6 +941,10 @@ app.get('/api/admin/posts', authenticateToken, async (req, res) => {
 // Create/Update post
 app.post('/api/admin/posts', authenticateToken, async (req, res) => {
   try {
+    console.log('[POST /api/admin/posts] Request received');
+    console.log('[POST /api/admin/posts] Body:', JSON.stringify(req.body, null, 2));
+    console.log('[POST /api/admin/posts] User:', req.user);
+    
     const {
       id,
       title,
@@ -955,6 +959,11 @@ app.post('/api/admin/posts', authenticateToken, async (req, res) => {
       published_at,
       tags
     } = req.body;
+    
+    if (!title || !content) {
+      console.error('[POST /api/admin/posts] Missing required fields:', { title: !!title, content: !!content });
+      return res.status(400).json({ error: 'Title and content are required' });
+    }
 
     const slug = providedSlug || slugify(title);
     const featuredImageAssetId = featured_image_asset_id || null;
