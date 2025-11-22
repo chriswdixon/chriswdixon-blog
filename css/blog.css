@@ -126,7 +126,7 @@
 
 .posts-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     margin-bottom: var(--spacing-lg);
     flex-wrap: wrap;
@@ -277,12 +277,9 @@
     color: var(--text-light);
 }
 
-/* Category Filters */
+/* Category Filters - Hidden */
 .category-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-lg);
+    display: none;
 }
 
 .filter-btn {

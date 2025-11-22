@@ -33,6 +33,14 @@
                 <a href="index.html" class="logo">Life's Quirks</a>
                 <ul class="nav-menu">
                     <li><a href="index.html" class="nav-link">Home</a></li>
+                    <li>
+                        <button id="search-toggle" class="search-toggle-btn" aria-label="Search">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.35-4.35"></path>
+                            </svg>
+                        </button>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -44,11 +52,6 @@
             <h1 class="blog-hero-title">Life is full of Quirks</h1>
             <p class="blog-hero-subtitle">My Thoughts, My Plans, My Projects</p>
             
-            <!-- Category Filters -->
-            <div class="category-filters">
-                <button class="filter-btn active" data-category="all">All</button>
-                <!-- Categories will be loaded dynamically -->
-            </div>
         </div>
     </section>
 
@@ -66,11 +69,7 @@
     <section class="posts-section">
         <div class="container">
             <div class="posts-header">
-                <h2>All Posts</h2>
                 <div class="posts-controls">
-                    <div class="search-box">
-                        <input type="text" id="search-input" placeholder="Search posts...">
-                    </div>
                     <select id="sort-select" class="sort-select">
                         <option value="newest">Newest First</option>
                         <option value="oldest">Oldest First</option>
@@ -100,37 +99,18 @@
     <script src="js/main.js"></script>
     <script src="js/blog.js"></script>
     
-    <script>
-        // Load categories for filters
-        async function loadCategories() {
-            try {
-                const categories = await api.getCategories();
-                const container = document.querySelector('.category-filters');
-                if (categories.length > 0) {
-                    categories.forEach(cat => {
-                        const btn = document.createElement('button');
-                        btn.className = 'filter-btn';
-                        btn.dataset.category = cat.slug;
-                        btn.textContent = cat.name;
-                        btn.style.backgroundColor = cat.color || '#0c71c3';
-                        btn.addEventListener('click', (e) => {
-                            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                            btn.classList.add('active');
-                            document.querySelector('.category-filters').firstElementChild.classList.remove('active');
-                            // Trigger blog.js filter
-                            const event = new Event('click');
-                            btn.dispatchEvent(event);
-                        });
-                        container.appendChild(btn);
-                    });
-                }
-            } catch (error) {
-                console.error('Error loading categories:', error);
-            }
-        }
-        
-        loadCategories();
-    </script>
+    <!-- Search Modal -->
+    <div id="search-modal" class="search-modal" style="display: none;">
+        <div class="search-modal-content">
+            <div class="search-modal-header">
+                <h2>Search Posts</h2>
+                <button id="search-close" class="search-close-btn" aria-label="Close search">×</button>
+            </div>
+            <div class="search-modal-body">
+                <input type="text" id="search-input" placeholder="Search posts..." autofocus>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
 

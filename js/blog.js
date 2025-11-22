@@ -4,7 +4,6 @@
 
 document.addEventListener('DOMContentLoaded', function() {
   // State
-  let currentCategory = 'all';
   let currentPage = 1;
   let currentSort = 'newest';
   let searchQuery = '';
@@ -16,11 +15,49 @@ document.addEventListener('DOMContentLoaded', function() {
   const loadMoreBtn = document.getElementById('load-more-btn');
   const searchInput = document.getElementById('search-input');
   const sortSelect = document.getElementById('sort-select');
-  const categoryFilters = document.querySelectorAll('.filter-btn');
+  const searchToggle = document.getElementById('search-toggle');
+  const searchModal = document.getElementById('search-modal');
+  const searchClose = document.getElementById('search-close');
 
   // Initialize
   loadFeaturedPosts();
   loadPosts();
+
+  // Search Modal Toggle
+  if (searchToggle) {
+    searchToggle.addEventListener('click', () => {
+      if (searchModal) {
+        searchModal.style.display = 'flex';
+        if (searchInput) {
+          setTimeout(() => searchInput.focus(), 100);
+        }
+      }
+    });
+  }
+
+  if (searchClose) {
+    searchClose.addEventListener('click', () => {
+      if (searchModal) {
+        searchModal.style.display = 'none';
+      }
+    });
+  }
+
+  // Close modal on background click
+  if (searchModal) {
+    searchModal.addEventListener('click', (e) => {
+      if (e.target === searchModal) {
+        searchModal.style.display = 'none';
+      }
+    });
+  }
+
+  // Close modal on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && searchModal && searchModal.style.display === 'flex') {
+      searchModal.style.display = 'none';
+    }
+  });
 
   // Event Listeners
   if (searchInput) {
@@ -40,18 +77,6 @@ document.addEventListener('DOMContentLoaded', function() {
       currentSort = e.target.value;
       currentPage = 1;
       loadPosts();
-    });
-  }
-
-  if (categoryFilters && categoryFilters.length > 0) {
-    categoryFilters.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        categoryFilters.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentCategory = btn.dataset.category || 'all';
-        currentPage = 1;
-        loadPosts();
-      });
     });
   }
 
@@ -115,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     try {
       const posts = await api.getPosts({
-        category: currentCategory,
+        category: 'all',
         search: searchQuery,
         sort: currentSort,
         page: currentPage,
