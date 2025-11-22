@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Blog Platform</title>
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <h1>Admin Login</h1>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+            </form>
+            
+            <p style="text-align: center; margin-top: var(--spacing-md);">
+                Don't have an account? <a href="#" id="register-link">Register</a>
+            </p>
+            
+            <div id="message" style="margin-top: var(--spacing-md);"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/config.js"></script>
+    <script src="../js/main.js"></script>
+    
+    <script>
+        // Redirect if already logged in
+        if (api.isAuthenticated()) {
+            window.location.href = 'index.html';
+        }
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const messageEl = document.getElementById('message');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Logging in...';
+            messageEl.textContent = '';
+            
+            try {
+                await api.login(email, password);
+                window.location.href = 'index.html';
+            } catch (error) {
+                messageEl.textContent = error.message || 'Login failed. Please try again.';
+                messageEl.style.color = 'var(--error-color)';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Login';
+            }
+        });
+
+        document.getElementById('register-link').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const email = prompt('Enter your email:');
+            const password = prompt('Enter your password (min 8 characters):');
+            const name = prompt('Enter your name (optional):');
+            
+            if (!email || !password) return;
+            
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = 'Registering...';
+            
+            try {
+                await api.register(email, password, name);
+                messageEl.textContent = 'Registration successful! Please login.';
+                messageEl.style.color = 'var(--accent-color)';
+            } catch (error) {
+                messageEl.textContent = error.message || 'Registration failed. Please try again.';
+                messageEl.style.color = 'var(--error-color)';
+            }
+        });
+    </script>
+</body>
+</html>
+
+

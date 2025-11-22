@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Blog post">
+    <title>Blog Post</title>
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/blog.css">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Marked.js for markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- Prism.js for code highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-wrapper">
+                <a href="index.html" class="logo">Blog Platform</a>
+                <ul class="nav-menu">
+                    <li><a href="index.html" class="nav-link">Home</a></li>
+                    <li><a href="admin/login.html" class="nav-link">Admin</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Post Detail -->
+    <section class="post-detail">
+        <div class="container">
+            <article id="post-content">
+                <div class="post-detail-header">
+                    <h1 class="post-detail-title" id="post-title">Loading...</h1>
+                    <div class="post-detail-meta" id="post-meta"></div>
+                    <img id="post-image" class="post-detail-image" style="display: none;" alt="">
+                </div>
+                <div class="post-detail-content" id="post-body">
+                    Loading...
+                </div>
+            </article>
+
+            <!-- Comments Section -->
+            <section class="comments-section">
+                <div class="comments-header">
+                    <h2>Comments</h2>
+                </div>
+                
+                <div id="comments-container">
+                    <!-- Comments will be loaded here -->
+                </div>
+
+                <!-- Comment Form -->
+                <form id="comment-form" class="comment-form">
+                    <h3>Leave a Comment</h3>
+                    <div class="form-group">
+                        <input type="text" name="author_name" placeholder="Your name" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" name="author_email" placeholder="Your email (optional)">
+                    </div>
+                    <div class="form-group">
+                        <input type="url" name="author_url" placeholder="Your website (optional)">
+                    </div>
+                    <div class="form-group">
+                        <textarea name="content" placeholder="Your comment..." required></textarea>
+                    </div>
+                    <input type="hidden" name="parent_id" value="">
+                    <button type="submit" class="btn btn-primary">Post Comment</button>
+                </form>
+            </section>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer style="padding: var(--spacing-xl) 0; text-align: center; color: var(--text-secondary); border-top: 1px solid var(--border-color); margin-top: var(--spacing-xl);">
+        <div class="container">
+            <p>&copy; 2025 Blog Platform. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/comments.js"></script>
+    
+    <script>
+        // Load post
+        async function loadPost() {
+            const params = new URLSearchParams(window.location.search);
+            const slug = params.get('slug');
+            
+            if (!slug) {
+                document.getElementById('post-content').innerHTML = '<p class="error">Post not found</p>';
+                return;
+            }
+
+            try {
+                const post = await api.getPostBySlug(slug);
+                
+                // Set title
+                document.getElementById('post-title').textContent = post.title;
+                
+                // Set meta
+                const metaEl = document.getElementById('post-meta');
+                metaEl.innerHTML = `
+                    ${post.category_name ? `<span class="post-category" style="background-color: ${post.category_color || '#0c71c3'}">${post.category_name}</span>` : ''}
+                    ${post.published_at ? `<time>${utils.formatDate(post.published_at)}</time>` : ''}
+                    ${post.view_count ? `<span class="views">${post.view_count} views</span>` : ''}
+                `;
+                
+                // Set image
+                if (post.featured_image_url) {
+                    const imgEl = document.getElementById('post-image');
+                    imgEl.src = post.featured_image_url;
+                    imgEl.alt = post.title;
+                    imgEl.style.display = 'block';
+                }
+                
+                // Render markdown content
+                const contentEl = document.getElementById('post-body');
+                if (typeof marked !== 'undefined') {
+                    contentEl.innerHTML = marked.parse(post.content);
+                    // Highlight code blocks
+                    if (typeof Prism !== 'undefined') {
+                        Prism.highlightAllUnder(contentEl);
+                    }
+                } else {
+                    contentEl.textContent = post.content;
+                }
+                
+                // Increment view count
+                if (post.id) {
+                    api.incrementViewCount(post.id).catch(console.error);
+                }
+                
+                // Update page title and meta
+                document.title = `${post.title} - Blog`;
+                
+            } catch (error) {
+                console.error('Error loading post:', error);
+                document.getElementById('post-content').innerHTML = '<p class="error">Error loading post. Please try again later.</p>';
+            }
+        }
+
+        loadPost();
+    </script>
+</body>
+</html>
+
+

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post Editor - Blog Platform</title>
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <h2>Admin Panel</h2>
+            <ul class="admin-nav">
+                <li class="admin-nav-item">
+                    <a href="index.html" class="admin-nav-link">Dashboard</a>
+                </li>
+                <li class="admin-nav-item">
+                    <a href="posts.html" class="admin-nav-link">Posts</a>
+                </li>
+                <li class="admin-nav-item">
+                    <a href="categories.html" class="admin-nav-link">Categories</a>
+                </li>
+                <li class="admin-nav-item">
+                    <a href="comments.html" class="admin-nav-link">Comments</a>
+                </li>
+                <li class="admin-nav-item">
+                    <a href="editor.html" class="admin-nav-link active">New Post</a>
+                </li>
+                <li class="admin-nav-item">
+                    <a href="#" onclick="logout()" class="admin-nav-link">Logout</a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <div class="admin-header">
+                <h1 id="editor-title">New Post</h1>
+            </div>
+
+            <form id="post-form" class="admin-form">
+                <input type="hidden" id="post-id" name="id">
+                
+                <div class="form-group">
+                    <label for="title">Title *</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="slug">Slug (auto-generated from title)</label>
+                    <input type="text" id="slug" name="slug">
+                </div>
+
+                <div class="form-group">
+                    <label for="excerpt">Excerpt</label>
+                    <textarea id="excerpt" name="excerpt" rows="3"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="content">Content (Markdown) *</label>
+                    <textarea id="content" name="content" rows="20" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" name="category_id">
+                        <option value="">No category</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="tags">Tags (comma-separated)</label>
+                    <input type="text" id="tags" name="tags" placeholder="tag1, tag2, tag3">
+                </div>
+
+                <div class="form-group">
+                    <label for="featured_image_url">Featured Image URL</label>
+                    <input type="url" id="featured_image_url" name="featured_image_url">
+                </div>
+
+                <div class="form-group">
+                    <label for="status">Status</label>
+                    <select id="status" name="status">
+                        <option value="draft">Draft</option>
+                        <option value="published">Published</option>
+                        <option value="archived">Archived</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="featured" name="featured"> Featured Post
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label for="published_at">Published At</label>
+                    <input type="datetime-local" id="published_at" name="published_at">
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Post</button>
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='index.html'">Cancel</button>
+                </div>
+
+                <div id="message" style="margin-top: var(--spacing-md);"></div>
+            </form>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/config.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="../js/admin.js"></script>
+    
+    <script>
+        let editingPostId = null;
+        let categories = [];
+        let tags = [];
+
+        // Load categories
+        async function loadCategories() {
+            try {
+                categories = await api.request('/api/admin/categories');
+                const select = document.getElementById('category');
+                select.innerHTML = '<option value="">No category</option>';
+                categories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat.id;
+                    option.textContent = cat.name;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            }
+        }
+
+        // Load tags
+        async function loadTags() {
+            try {
+                tags = await api.request('/api/admin/tags');
+            } catch (error) {
+                console.error('Error loading tags:', error);
+            }
+        }
+
+        // Load post if editing
+        async function loadPost() {
+            const params = new URLSearchParams(window.location.search);
+            const postId = params.get('id');
+            
+            if (!postId) {
+                loadCategories();
+                loadTags();
+                return;
+            }
+
+            editingPostId = postId;
+            document.getElementById('editor-title').textContent = 'Edit Post';
+
+            try {
+                const posts = await api.request('/api/admin/posts');
+                const post = posts.find(p => p.id === postId);
+                
+                if (!post) {
+                    document.getElementById('message').textContent = 'Post not found';
+                    return;
+                }
+
+                // Fill form
+                document.getElementById('post-id').value = post.id;
+                document.getElementById('title').value = post.title;
+                document.getElementById('slug').value = post.slug;
+                document.getElementById('excerpt').value = post.excerpt || '';
+                document.getElementById('content').value = post.content;
+                document.getElementById('featured_image_url').value = post.featured_image_url || '';
+                document.getElementById('status').value = post.status || 'draft';
+                document.getElementById('featured').checked = post.featured || false;
+                
+                if (post.published_at) {
+                    const date = new Date(post.published_at);
+                    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+                    document.getElementById('published_at').value = localDate.toISOString().slice(0, 16);
+                }
+
+                await loadCategories();
+                if (post.category_id) {
+                    document.getElementById('category').value = post.category_id;
+                }
+
+                await loadTags();
+                if (post.tags && post.tags.length > 0) {
+                    document.getElementById('tags').value = post.tags.map(t => t.name).join(', ');
+                }
+
+            } catch (error) {
+                console.error('Error loading post:', error);
+                document.getElementById('message').textContent = 'Error loading post';
+            }
+        }
+
+        // Auto-generate slug from title
+        document.getElementById('title').addEventListener('input', (e) => {
+            if (!document.getElementById('post-id').value) {
+                const slug = utils.slugify(e.target.value);
+                document.getElementById('slug').value = slug;
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('post-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const messageEl = document.getElementById('message');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+            messageEl.textContent = '';
+
+            const formData = new FormData(e.target);
+            
+            // Parse tags
+            const tagsInput = formData.get('tags');
+            let tagIds = [];
+            if (tagsInput) {
+                const tagNames = tagsInput.split(',').map(t => t.trim()).filter(t => t);
+                for (const tagName of tagNames) {
+                    const tagSlug = utils.slugify(tagName);
+                    const existingTag = tags.find(t => t.slug === tagSlug);
+                    if (existingTag) {
+                        tagIds.push(existingTag.id);
+                    } else {
+                        // Create new tag
+                        try {
+                            const newTag = await api.request('/api/admin/tags', 'POST', {
+                                name: tagName,
+                                slug: tagSlug
+                            });
+                            tagIds.push(newTag.id);
+                            tags.push(newTag);
+                        } catch (error) {
+                            console.error('Error creating tag:', error);
+                        }
+                    }
+                }
+            }
+
+            const postData = {
+                id: formData.get('id') || null,
+                title: formData.get('title'),
+                slug: formData.get('slug') || utils.slugify(formData.get('title')),
+                excerpt: formData.get('excerpt'),
+                content: formData.get('content'),
+                featured_image_url: formData.get('featured_image_url'),
+                category_id: formData.get('category_id') || null,
+                status: formData.get('status'),
+                featured: formData.get('featured') === 'on',
+                published_at: formData.get('published_at') || null,
+                tags: tagIds
+            };
+
+            try {
+                await api.request('/api/admin/posts', 'POST', postData);
+                messageEl.textContent = 'Post saved successfully!';
+                messageEl.style.color = 'var(--accent-color)';
+                
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
+            } catch (error) {
+                messageEl.textContent = error.message || 'Error saving post';
+                messageEl.style.color = 'var(--error-color)';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Post';
+            }
+        });
+
+        function logout() {
+            api.logout();
+            window.location.href = 'login.html';
+        }
+
+        loadPost();
+    </script>
+</body>
+</html>
+
+

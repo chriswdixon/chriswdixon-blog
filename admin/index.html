@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Blog Platform</title>
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <h2>Admin Panel</h2>
+            <ul class="admin-nav">
+                <li class="admin-nav-item">
+                    <a href="index.html" class="admin-nav-link active">Dashboard</a>
+                </li>
+                <li class="admin-nav-item">
+                    <a href="posts.html" class="admin-nav-link">Posts</a>
+                </li>
+                <li class="admin-nav-item">
+                    <a href="categories.html" class="admin-nav-link">Categories</a>
+                </li>
+                <li class="admin-nav-item">
+                    <a href="comments.html" class="admin-nav-link">Comments</a>
+                </li>
+                <li class="admin-nav-item">
+                    <a href="editor.html" class="admin-nav-link">New Post</a>
+                </li>
+                <li class="admin-nav-item">
+                    <a href="#" onclick="logout()" class="admin-nav-link">Logout</a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <div class="admin-header">
+                <h1>Dashboard</h1>
+                <div class="admin-user-info" id="admin-user-info">
+                    Loading...
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="admin-stats" id="admin-dashboard">
+                <div class="stat-card">
+                    <h3 id="stats-posts">0</h3>
+                    <p>Total Posts</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="stats-views">0</h3>
+                    <p>Total Views</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="stats-categories">0</h3>
+                    <p>Categories</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="stats-subscribers">0</h3>
+                    <p>Subscribers</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="stats-pending-comments">0</h3>
+                    <p>Pending Comments</p>
+                </div>
+            </div>
+
+            <!-- Recent Posts -->
+            <section style="margin-top: var(--spacing-xl);">
+                <h2>Recent Posts</h2>
+                <div id="posts-list" class="admin-list">
+                    <!-- Posts will be loaded here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/config.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="../js/admin.js"></script>
+    
+    <script>
+        // Load user info
+        async function loadUserInfo() {
+            try {
+                const data = await api.getCurrentUser();
+                const user = data.user;
+                document.getElementById('admin-user-info').textContent = `Logged in as: ${user.email}`;
+            } catch (error) {
+                console.error('Error loading user info:', error);
+            }
+        }
+
+        function logout() {
+            api.logout();
+            window.location.href = 'login.html';
+        }
+
+        loadUserInfo();
+    </script>
+</body>
+</html>
+
+
