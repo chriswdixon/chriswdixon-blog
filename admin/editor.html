@@ -74,7 +74,7 @@
 
                 <div class="form-group">
                     <label for="content">Content (Markdown) *</label>
-                    <textarea id="content" name="content" rows="20" required></textarea>
+                    <textarea id="content" name="content" rows="20"></textarea>
                 </div>
 
                 <div class="form-group">
@@ -366,6 +366,15 @@
 
             // Get content from EasyMDE if available, otherwise from textarea
             const content = easyMDE ? easyMDE.value() : formData.get('content');
+            
+            // Validate content
+            if (!content || content.trim() === '') {
+                messageEl.textContent = 'Content is required';
+                messageEl.style.color = 'var(--error-color, #dc3545)';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Post';
+                return;
+            }
             
             const postData = {
                 id: formData.get('id') || null,
