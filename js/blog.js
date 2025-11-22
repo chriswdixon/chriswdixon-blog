@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const postsGridContainer = document.getElementById('posts-grid');
   const loadMoreBtn = document.getElementById('load-more-btn');
   const searchInput = document.getElementById('search-input');
-  const sortSelect = document.getElementById('sort-select');
   const searchToggle = document.getElementById('search-toggle');
   const searchModal = document.getElementById('search-modal');
   const searchClose = document.getElementById('search-close');
@@ -72,13 +71,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  if (sortSelect) {
-    sortSelect.addEventListener('change', (e) => {
-      currentSort = e.target.value;
-      currentPage = 1;
-      loadPosts();
-    });
-  }
 
   if (loadMoreBtn) {
     loadMoreBtn.addEventListener('click', () => {
