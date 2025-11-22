@@ -31,10 +31,6 @@
                 <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
             </form>
             
-            <p style="text-align: center; margin-top: var(--spacing-md);">
-                Don't have an account? <a href="#" id="register-link">Register</a>
-            </p>
-            
             <div id="message" style="margin-top: var(--spacing-md);"></div>
         </div>
     </div>
@@ -72,26 +68,6 @@
             }
         });
 
-        document.getElementById('register-link').addEventListener('click', async (e) => {
-            e.preventDefault();
-            const email = prompt('Enter your email:');
-            const password = prompt('Enter your password (min 8 characters):');
-            const name = prompt('Enter your name (optional):');
-            
-            if (!email || !password) return;
-            
-            const messageEl = document.getElementById('message');
-            messageEl.textContent = 'Registering...';
-            
-            try {
-                await api.register(email, password, name);
-                messageEl.textContent = 'Registration successful! Please login.';
-                messageEl.style.color = 'var(--accent-color)';
-            } catch (error) {
-                messageEl.textContent = error.message || 'Registration failed. Please try again.';
-                messageEl.style.color = 'var(--error-color)';
-            }
-        });
     </script>
 </body>
 </html>

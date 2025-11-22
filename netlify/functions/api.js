@@ -261,55 +261,9 @@ app.get('/api/media/:assetId', async (req, res) => {
 // AUTH ROUTES
 // ============================================
 
-// Register
-app.post('/api/auth/register', [
-  body('email').isEmail().normalizeEmail(),
-  body('password').isLength({ min: 8 }),
-  body('name').optional().trim()
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ error: 'Invalid input' });
-    }
-
-    const { email, password, name } = req.body;
-
-    // Check if user exists
-    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
-    if (existing.rows.length > 0) {
-      return res.status(400).json({ error: 'User already exists' });
-    }
-
-    // Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    // Create user (first user is admin)
-    const countResult = await pool.query('SELECT COUNT(*) as count FROM users');
-    const isFirstUser = parseInt(countResult.rows[0].count) === 0;
-    const role = isFirstUser ? 'admin' : 'user';
-
-    const result = await pool.query(
-      `INSERT INTO users (email, password_hash, name, role)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, email, name, role, created_at`,
-      [email, passwordHash, name || null, role]
-    );
-
-    const token = jwt.sign(
-      { id: result.rows[0].id, email: result.rows[0].email },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    res.status(201).json({
-      user: result.rows[0],
-      access_token: token
-    });
-  } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+// Register - DISABLED: Registration is disabled. Admins must be created directly in the database.
+app.post('/api/auth/register', (req, res) => {
+  res.status(403).json({ error: 'Registration is disabled. Contact an administrator.' });
 });
 
 // Login

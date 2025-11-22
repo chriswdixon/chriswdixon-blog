@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "netlify dev",
     "build": "echo 'No build needed - static site'",
-    "deploy": "netlify deploy --prod"
+    "deploy": "netlify deploy --prod",
+    "create-admin": "node scripts/create-admin-user.js"
   },
   "keywords": [
     "blog",
