@@ -364,7 +364,7 @@ app.post('/api/auth/register', (req, res) => {
 // Login
 app.post('/api/auth/login', [
   body('email').isEmail().normalizeEmail(),
-  body('password').notEmpty()
+  body('password').notEmpty().isLength({ min: 1, max: 200 })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);

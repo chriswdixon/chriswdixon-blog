@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comments - Admin - The Chris Dixon Brief</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📝</text></svg>">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <h2>Admin Panel</h2>
+            <ul class="admin-nav">
+                <li class="admin-nav-item">
+                    <a href="index.html" class="admin-nav-link">Dashboard</a>
+                </li>
+                <li class="admin-nav-item">
+                    <a href="posts.html" class="admin-nav-link">Posts</a>
+                </li>
+                <li class="admin-nav-item">
+                    <a href="categories.html" class="admin-nav-link">Categories</a>
+                </li>
+                <li class="admin-nav-item">
+                    <a href="comments.html" class="admin-nav-link active">Comments</a>
+                </li>
+                <li class="admin-nav-item">
+                    <a href="editor.html" class="admin-nav-link">New Post</a>
+                </li>
+                <li class="admin-nav-item">
+                    <a href="#" onclick="logout()" class="admin-nav-link">Logout</a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <div class="admin-header">
+                <h1>Comments</h1>
+            </div>
+
+            <div id="admin-comments">
+                <div id="comments-list" class="admin-list">
+                    <!-- Comments will be loaded here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/config.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="../js/admin.js"></script>
+    
+    <script>
+        function logout() {
+            api.logout();
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>
+
