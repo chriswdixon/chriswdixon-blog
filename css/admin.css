@@ -2,6 +2,12 @@
    BLOG PLATFORM - ADMIN STYLES
    ============================================ */
 
+/* Admin Body Background */
+body.admin-page,
+.admin-layout {
+    background: var(--background-color);
+}
+
 /* Admin Layout */
 .admin-layout {
     display: flex;

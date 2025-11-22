@@ -20,9 +20,9 @@
     --text-primary: #1f2937;
     --text-secondary: #6b7280;
     --text-light: #9ca3af;
-    --background-color: #ffffff;
-    --background-alt: #f9fafb;
-    --border-color: #e5e7eb;
+    --background-color: #f3f4f6;
+    --background-alt: #e5e7eb;
+    --border-color: #d1d5db;
     
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
