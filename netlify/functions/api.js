@@ -796,6 +796,23 @@ app.get('/api/blog/posts/:postId/comments', async (req, res) => {
   try {
     const { postId } = req.params;
     
+    // Helper function to check if string is a UUID
+    const isUUID = (str) => {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      return uuidRegex.test(str);
+    };
+    
+    // Resolve post ID - check if it's a UUID or a slug
+    let actualPostId = postId;
+    if (!isUUID(postId)) {
+      // It's a slug, look up the post ID
+      const postResult = await pool.query('SELECT id FROM blog_posts WHERE slug = $1', [postId]);
+      if (postResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
+      actualPostId = postResult.rows[0].id;
+    }
+    
     const result = await pool.query(`
       SELECT 
         c.*,
@@ -805,7 +822,7 @@ app.get('/api/blog/posts/:postId/comments', async (req, res) => {
       LEFT JOIN users u ON c.user_id = u.id
       WHERE c.post_id = $1 AND c.status = 'approved'
       ORDER BY c.created_at ASC
-    `, [postId]);
+    `, [actualPostId]);
 
     // Build nested structure
     const commentsMap = new Map();
@@ -849,10 +866,27 @@ app.post('/api/blog/posts/:postId/comments', [
     const { postId } = req.params;
     const { author_name, author_email, author_url, content, parent_id, user_id } = req.body;
 
-    // Verify post exists
-    const postCheck = await pool.query('SELECT id FROM blog_posts WHERE id = $1', [postId]);
-    if (postCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Post not found' });
+    // Helper function to check if string is a UUID
+    const isUUID = (str) => {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      return uuidRegex.test(str);
+    };
+    
+    // Resolve post ID - check if it's a UUID or a slug
+    let actualPostId = postId;
+    if (!isUUID(postId)) {
+      // It's a slug, look up the post ID
+      const postCheck = await pool.query('SELECT id FROM blog_posts WHERE slug = $1', [postId]);
+      if (postCheck.rows.length === 0) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
+      actualPostId = postCheck.rows[0].id;
+    } else {
+      // It's a UUID, verify post exists
+      const postCheck = await pool.query('SELECT id FROM blog_posts WHERE id = $1', [postId]);
+      if (postCheck.rows.length === 0) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
     }
 
     const result = await pool.query(
@@ -860,7 +894,7 @@ app.post('/api/blog/posts/:postId/comments', [
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
       [
-        postId,
+        actualPostId,
         parent_id || null,
         author_name,
         author_email || null,
