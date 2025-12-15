@@ -449,6 +449,8 @@
     color: var(--text-secondary);
     line-height: 1.6;
     margin-bottom: var(--spacing-sm);
+    font-family: var(--font-family-content);
+    font-weight: 400;
 }
 
 .comment-actions {
@@ -503,7 +505,7 @@
     padding: 0.75rem;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
-    font-family: var(--font-family);
+    font-family: var(--font-family-content);
     background: var(--background-color);
     color: var(--text-primary);
 }
