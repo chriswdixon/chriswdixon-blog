@@ -17,7 +17,7 @@ body.admin-page {
 
 .admin-sidebar {
     width: 250px;
-    background: rgba(229, 231, 235, 0.9);
+    background: rgba(26, 26, 26, 0.95);
     border-right: 1px solid var(--border-color);
     padding: var(--spacing-lg);
     position: fixed;
@@ -87,7 +87,7 @@ body.admin-page {
 }
 
 .stat-card {
-    background: rgba(229, 231, 235, 0.9);
+    background: rgba(26, 26, 26, 0.9);
     padding: var(--spacing-lg);
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-color);
@@ -108,7 +108,7 @@ body.admin-page {
 
 /* Admin Tables/Lists */
 .admin-list {
-    background: rgba(229, 231, 235, 0.9);
+    background: rgba(26, 26, 26, 0.9);
     border-radius: var(--radius-lg);
     overflow: hidden;
     border: 1px solid var(--border-color);
@@ -170,8 +170,8 @@ body.admin-page {
 }
 
 .btn-view {
-    background: var(--background-color);
-    color: var(--primary-color);
+    background: var(--background-alt);
+    color: var(--text-primary);
     border: 1px solid var(--border-color);
 }
 
@@ -209,7 +209,7 @@ body.admin-page {
 
 /* Admin Forms */
 .admin-form {
-    background: rgba(229, 231, 235, 0.9);
+    background: rgba(26, 26, 26, 0.9);
     padding: var(--spacing-xl);
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-color);
@@ -241,7 +241,7 @@ body.admin-page {
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     font-family: var(--font-family);
-    background: var(--background-color);
+    background: var(--background-alt);
     color: var(--text-primary);
 }
 
@@ -266,7 +266,7 @@ body.admin-page {
 }
 
 .login-card {
-    background: rgba(229, 231, 235, 0.95);
+    background: rgba(26, 26, 26, 0.95);
     padding: var(--spacing-xl);
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-color);
@@ -341,7 +341,7 @@ body.admin-page {
 }
 
 .modal-content {
-    background: rgba(229, 231, 235, 0.95);
+    background: rgba(26, 26, 26, 0.95);
     border-radius: var(--radius-lg);
     padding: var(--spacing-xl);
     max-width: 600px;
@@ -421,91 +421,6 @@ body.admin-page {
     }
 }
 
-/* ============================================
-   DARK MODE STYLES FOR ADMIN
-   ============================================ */
-
-[data-theme="dark"] .admin-sidebar {
-    background: rgba(26, 26, 26, 0.95);
-    border-right-color: var(--border-color);
-}
-
-[data-theme="dark"] .admin-nav-link {
-    color: var(--text-primary);
-}
-
-[data-theme="dark"] .admin-nav-link:hover {
-    background: var(--background-alt);
-}
-
-[data-theme="dark"] .stat-card {
-    background: rgba(26, 26, 26, 0.9);
-    border-color: var(--border-color);
-}
-
-[data-theme="dark"] .admin-list {
-    background: rgba(26, 26, 26, 0.9);
-    border-color: var(--border-color);
-}
-
-[data-theme="dark"] .admin-form {
-    background: rgba(26, 26, 26, 0.9);
-    border-color: var(--border-color);
-}
-
-[data-theme="dark"] .login-card {
-    background: rgba(26, 26, 26, 0.95);
-    border-color: var(--border-color);
-}
-
-[data-theme="dark"] .modal-content {
-    background: rgba(26, 26, 26, 0.95);
-    border-color: var(--border-color);
-}
-
-[data-theme="dark"] .form-group input,
-[data-theme="dark"] .form-group textarea,
-[data-theme="dark"] .form-group select {
-    background: var(--background-alt);
-    color: var(--text-primary);
-    border-color: var(--border-color);
-}
-
-[data-theme="dark"] .btn-view {
-    background: var(--background-alt);
-    color: var(--text-primary);
-    border-color: var(--border-color);
-}
-
-[data-theme="dark"] .btn-view:hover {
-    background: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
-}
-
-/* Admin Theme Toggle Button */
-.admin-theme-toggle {
-    margin: var(--spacing-md) 0;
-    padding: var(--spacing-sm) 0;
-}
-
-.admin-theme-toggle .theme-toggle-btn {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-sm);
-    background: var(--background-alt);
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
-}
-
-.admin-theme-toggle .theme-toggle-btn:hover {
-    background: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
-}
 
 
 

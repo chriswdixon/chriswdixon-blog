@@ -92,8 +92,8 @@
 
 .featured-post .post-content {
     padding: var(--spacing-md);
-    font-family: 'Roboto', sans-serif;
-    font-weight: 300;
+    font-family: var(--font-family-content);
+    font-weight: 400;
 }
 
 .featured-post .post-title {
@@ -159,18 +159,13 @@
 }
 
 .post-card {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(26, 26, 26, 0.3);
     backdrop-filter: blur(10px);
     border-radius: var(--radius-lg);
     overflow: hidden;
     transition: transform var(--transition-base), box-shadow var(--transition-base), background var(--transition-base);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    position: relative;
-}
-
-[data-theme="dark"] .post-card {
-    background: rgba(26, 26, 26, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
 }
 
 .post-card::before {
@@ -214,8 +209,8 @@
 
 .post-card .post-content {
     padding: var(--spacing-md);
-    font-family: 'Roboto', sans-serif;
-    font-weight: 300;
+    font-family: var(--font-family-content);
+    font-weight: 400;
 }
 
 .post-category {
@@ -248,8 +243,8 @@
     font-size: 0.875rem;
     line-height: 1.6;
     margin-bottom: var(--spacing-sm);
-    font-family: 'Roboto', sans-serif;
-    font-weight: 300;
+    font-family: var(--font-family-content);
+    font-weight: 400;
 }
 
 .post-tags {
@@ -374,8 +369,8 @@
     margin: 0 auto;
     font-size: 1.125rem;
     line-height: 1.8;
-    font-family: 'Roboto', sans-serif;
-    font-weight: 300;
+    font-family: var(--font-family-content);
+    font-weight: 400;
 }
 
 .post-detail-content h2 {
