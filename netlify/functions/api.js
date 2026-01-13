@@ -1397,6 +1397,283 @@ app.get('/api/admin/stats', authenticateToken, async (req, res) => {
   }
 });
 
+// ============================================
+// LINKEDIN CROSS-POSTING ROUTES
+// ============================================
+
+// LinkedIn OAuth - Initiate authentication
+app.get('/api/linkedin/auth', authenticateToken, async (req, res) => {
+  try {
+    const LINKEDIN_CLIENT_ID = process.env.LINKEDIN_CLIENT_ID;
+    const LINKEDIN_REDIRECT_URI = process.env.LINKEDIN_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/linkedin/callback`;
+    
+    if (!LINKEDIN_CLIENT_ID) {
+      return res.status(500).json({ error: 'LinkedIn Client ID not configured' });
+    }
+
+    const state = jwt.sign({ userId: req.user.id }, JWT_SECRET, { expiresIn: '10m' });
+    const scope = 'openid profile email w_member_social';
+    const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(LINKEDIN_REDIRECT_URI)}&state=${state}&scope=${encodeURIComponent(scope)}`;
+    
+    res.redirect(authUrl);
+  } catch (error) {
+    console.error('LinkedIn auth error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// LinkedIn OAuth - Callback
+app.get('/api/linkedin/callback', async (req, res) => {
+  try {
+    const { code, state, error } = req.query;
+    
+    // Determine redirect base URL
+    const redirectBase = process.env.SITE_URL || `https://${req.get('host')}`;
+    const adminPostsUrl = `${redirectBase}/admin/posts.html`;
+    
+    if (error) {
+      return res.redirect(`${adminPostsUrl}?linkedin_error=${encodeURIComponent(error)}`);
+    }
+    
+    if (!code || !state) {
+      return res.redirect(`${adminPostsUrl}?linkedin_error=missing_parameters`);
+    }
+
+    // Verify state token
+    let decodedState;
+    try {
+      decodedState = jwt.verify(state, JWT_SECRET);
+    } catch (err) {
+      return res.redirect(`${adminPostsUrl}?linkedin_error=invalid_state`);
+    }
+
+    // Exchange code for access token
+    const LINKEDIN_CLIENT_ID = process.env.LINKEDIN_CLIENT_ID;
+    const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET;
+    const LINKEDIN_REDIRECT_URI = process.env.LINKEDIN_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/linkedin/callback`;
+    
+    if (!LINKEDIN_CLIENT_ID || !LINKEDIN_CLIENT_SECRET) {
+      const redirectBase = process.env.SITE_URL || `https://${req.get('host')}`;
+      return res.redirect(`${redirectBase}/admin/posts.html?linkedin_error=not_configured`);
+    }
+
+    const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: LINKEDIN_REDIRECT_URI,
+        client_id: LINKEDIN_CLIENT_ID,
+        client_secret: LINKEDIN_CLIENT_SECRET
+      })
+    });
+
+    if (!tokenResponse.ok) {
+      const errorData = await tokenResponse.text();
+      console.error('LinkedIn token exchange error:', errorData);
+      const redirectBase = process.env.SITE_URL || `https://${req.get('host')}`;
+      return res.redirect(`${redirectBase}/admin/posts.html?linkedin_error=token_exchange_failed`);
+    }
+
+    const tokenData = await tokenResponse.json();
+    
+    // Store access token in database (encrypted or in environment variable)
+    // For now, we'll store it in a settings table or use environment variable
+    // Create settings table if it doesn't exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key VARCHAR(255) PRIMARY KEY,
+        value TEXT,
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    
+    // Store encrypted token (in production, use proper encryption)
+    await pool.query(`
+      INSERT INTO settings (key, value, updated_at)
+      VALUES ('linkedin_access_token', $1, NOW())
+      ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = NOW()
+    `, [tokenData.access_token]);
+    
+    if (tokenData.refresh_token) {
+      await pool.query(`
+        INSERT INTO settings (key, value, updated_at)
+        VALUES ('linkedin_refresh_token', $1, NOW())
+        ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = NOW()
+      `, [tokenData.refresh_token]);
+    }
+
+    const redirectBase = process.env.SITE_URL || `https://${req.get('host')}`;
+    res.redirect(`${redirectBase}/admin/posts.html?linkedin_success=true`);
+  } catch (error) {
+    console.error('LinkedIn callback error:', error);
+    const redirectBase = process.env.SITE_URL || `https://${req.get('host')}`;
+    res.redirect(`${redirectBase}/admin/posts.html?linkedin_error=callback_failed`);
+  }
+});
+
+// Get LinkedIn authentication status
+app.get('/api/linkedin/status', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT value FROM settings WHERE key = $1',
+      ['linkedin_access_token']
+    );
+    
+    res.json({
+      authenticated: result.rows.length > 0 && !!result.rows[0].value
+    });
+  } catch (error) {
+    console.error('LinkedIn status error:', error);
+    res.json({ authenticated: false });
+  }
+});
+
+// Post to LinkedIn
+app.post('/api/linkedin/post', authenticateToken, async (req, res) => {
+  try {
+    const { postId, title, url } = req.body;
+    
+    if (!postId || !title || !url) {
+      return res.status(400).json({ error: 'Missing required fields: postId, title, url' });
+    }
+
+    // Get access token from database
+    const tokenResult = await pool.query(
+      'SELECT value FROM settings WHERE key = $1',
+      ['linkedin_access_token']
+    );
+    
+    if (tokenResult.rows.length === 0 || !tokenResult.rows[0].value) {
+      return res.status(401).json({ 
+        error: 'LinkedIn not authenticated',
+        requiresAuth: true 
+      });
+    }
+
+    const accessToken = tokenResult.rows[0].value;
+
+    // Get user's LinkedIn person URN
+    const personResponse = await fetch('https://api.linkedin.com/v2/me', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'X-Restli-Protocol-Version': '2.0.0'
+      }
+    });
+
+    if (!personResponse.ok) {
+      // Token might be expired
+      const refreshResult = await pool.query(
+        'SELECT value FROM settings WHERE key = $1',
+        ['linkedin_refresh_token']
+      );
+      
+      if (refreshResult.rows.length > 0 && refreshResult.rows[0].value) {
+        return res.status(401).json({ 
+          error: 'LinkedIn token expired. Please re-authenticate.',
+          requiresAuth: true 
+        });
+      }
+      
+      return res.status(401).json({ 
+        error: 'LinkedIn authentication failed. Please re-authenticate.',
+        requiresAuth: true 
+      });
+    }
+
+    const personData = await personResponse.json();
+    // LinkedIn person URN format: urn:li:person:{id}
+    // The /me endpoint returns an id field that we can use
+    const personUrn = personData.id ? (personData.id.startsWith('urn:') ? personData.id : `urn:li:person:${personData.id}`) : null;
+    
+    if (!personUrn) {
+      return res.status(400).json({ 
+        error: 'Could not determine LinkedIn person URN'
+      });
+    }
+
+    // Create LinkedIn post using UGC Posts API (recommended approach)
+    const postContent = {
+      author: personUrn,
+      lifecycleState: 'PUBLISHED',
+      specificContent: {
+        'com.linkedin.ugc.ShareContent': {
+          shareCommentary: {
+            text: `${title}\n\nRead more: ${url}`
+          },
+          shareMediaCategory: 'ARTICLE',
+          media: [{
+            status: 'READY',
+            description: {
+              text: title
+            },
+            originalUrl: url,
+            title: {
+              text: title
+            }
+          }]
+        }
+      },
+      visibility: {
+        'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
+      }
+    };
+
+    const postResponse = await fetch('https://api.linkedin.com/v2/ugcPosts', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        'X-Restli-Protocol-Version': '2.0.0'
+      },
+      body: JSON.stringify(postContent)
+    });
+
+    if (!postResponse.ok) {
+      const errorData = await postResponse.text();
+      console.error('LinkedIn post error:', errorData);
+      return res.status(postResponse.status).json({ 
+        error: 'Failed to post to LinkedIn',
+        details: errorData 
+      });
+    }
+
+    const postResult = await postResponse.json();
+    
+    // Store LinkedIn post ID in database for tracking
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS linkedin_posts (
+        id SERIAL PRIMARY KEY,
+        post_id VARCHAR(255) NOT NULL,
+        linkedin_post_id VARCHAR(255),
+        created_at TIMESTAMP DEFAULT NOW(),
+        FOREIGN KEY (post_id) REFERENCES blog_posts(id) ON DELETE CASCADE
+      )
+    `);
+    
+    await pool.query(`
+      INSERT INTO linkedin_posts (post_id, linkedin_post_id)
+      VALUES ($1, $2)
+      ON CONFLICT DO NOTHING
+    `, [postId, postResult.id]);
+
+    res.json({ 
+      success: true,
+      linkedinPostId: postResult.id,
+      message: 'Successfully posted to LinkedIn'
+    });
+  } catch (error) {
+    console.error('LinkedIn post error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message 
+    });
+  }
+});
+
 // Export handler
 exports.handler = serverless(app);
 

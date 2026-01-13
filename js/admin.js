@@ -16,6 +16,23 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function initAdmin() {
+  // Check for LinkedIn callback messages
+  const urlParams = new URLSearchParams(window.location.search);
+  const linkedinSuccess = urlParams.get('linkedin_success');
+  const linkedinError = urlParams.get('linkedin_error');
+  
+  if (linkedinSuccess) {
+    showMessage('LinkedIn authentication successful!', 'success');
+    // Clean up URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+  
+  if (linkedinError) {
+    showMessage('LinkedIn error: ' + decodeURIComponent(linkedinError), 'error');
+    // Clean up URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
   // Load dashboard stats
   if (document.getElementById('admin-dashboard')) {
     await loadDashboard();
@@ -28,6 +45,7 @@ async function initAdmin() {
   // Load posts management
   if (document.getElementById('admin-posts') || document.getElementById('posts-list')) {
     await loadPosts();
+    await checkLinkedInAuth();
   }
 
   // Load categories management
@@ -96,6 +114,7 @@ async function loadPosts() {
         <div class="post-actions">
           <a href="${viewPath}" target="_blank" class="btn-view">View</a>
           <a href="${editPath}" class="btn-edit">Edit</a>
+          ${post.status === 'published' ? `<button onclick="crossPostToLinkedIn('${post.id}', '${escapeHtml(post.title)}', '${post.slug}')" class="btn-linkedin" title="Cross-post to LinkedIn">🔗 LinkedIn</button>` : ''}
           ${!isDashboard ? `<button onclick="deletePost('${post.id}')" class="btn-delete">Delete</button>` : ''}
         </div>
       </div>
@@ -250,8 +269,85 @@ window.deleteComment = async function(commentId) {
   }
 };
 
+window.crossPostToLinkedIn = async function(postId, postTitle, postSlug) {
+  if (!confirm(`Post "${postTitle}" to LinkedIn?`)) return;
+  
+  try {
+    const apiUrl = window.API_URL || '';
+    const postUrl = `${window.location.origin}${window.location.pathname.replace(/\/admin\/.*$/, '')}/post.html?slug=${postSlug}`;
+    
+    const response = await api.request('/api/linkedin/post', 'POST', {
+      postId: postId,
+      title: postTitle,
+      url: postUrl
+    });
+    
+    if (response.success) {
+      alert('Successfully posted to LinkedIn!');
+    } else {
+      alert('Failed to post to LinkedIn: ' + (response.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Error cross-posting to LinkedIn:', error);
+    if (error.message && error.message.includes('not authenticated')) {
+      if (confirm('LinkedIn authentication required. Would you like to authenticate now?')) {
+        window.location.href = '/api/linkedin/auth';
+      }
+    } else {
+      alert('Error posting to LinkedIn: ' + (error.message || 'Unknown error'));
+    }
+  }
+};
+
+async function checkLinkedInAuth() {
+  try {
+    const status = await api.request('/api/linkedin/status');
+    if (!status.authenticated) {
+      // Show a notice that LinkedIn needs to be connected
+      const container = document.getElementById('admin-posts') || document.getElementById('posts-list');
+      if (container && !container.querySelector('.linkedin-notice')) {
+        const notice = document.createElement('div');
+        notice.className = 'linkedin-notice';
+        notice.style.cssText = 'padding: var(--spacing-md); background: rgba(0, 119, 181, 0.1); border: 1px solid #0077b5; border-radius: var(--radius-md); margin-bottom: var(--spacing-md);';
+        notice.innerHTML = `
+          <p style="margin: 0 0 var(--spacing-sm) 0; color: var(--text-primary);">
+            <strong>LinkedIn Integration:</strong> Connect your LinkedIn account to enable cross-posting.
+          </p>
+          <a href="/api/linkedin/auth" class="btn-linkedin" style="display: inline-block; text-decoration: none;">
+            Connect LinkedIn
+          </a>
+        `;
+        container.insertBefore(notice, container.firstChild);
+      }
+    }
+  } catch (error) {
+    console.error('Error checking LinkedIn auth:', error);
+  }
+}
+
 function showMessage(message, type = 'info') {
-  // Messages suppressed - no user notifications
+  // Create a toast notification
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#0c71c3'};
+    color: white;
+    border-radius: var(--radius-lg);
+    z-index: 10000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    animation: slideIn 0.3s ease-out;
+  `;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease-out forwards';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+  
   console.log(`[${type.toUpperCase()}] ${message}`);
 }
 
