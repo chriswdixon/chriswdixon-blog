@@ -71,16 +71,38 @@ console.log('[API] DATABASE_URL configured:', !!process.env.DATABASE_URL);
 
 // Middleware
 app.use(cors({
-  origin: [
-    /^https?:\/\/.*\.github\.io$/,
-    /^https?:\/\/.*\.githubpages\.com$/,
-    /^https?:\/\/.*\.netlify\.app$/,
-    'http://localhost:3000',
-    'http://localhost:8080',
-    'http://localhost:8888',
-    'http://localhost:5500'
-  ],
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedPatterns = [
+      /^https?:\/\/.*\.github\.io$/,
+      /^https?:\/\/.*\.githubpages\.com$/,
+      /^https?:\/\/.*\.netlify\.app$/,
+      /^http:\/\/localhost:\d+$/
+    ];
+    
+    const allowedStrings = [
+      'http://localhost:3000',
+      'http://localhost:8080',
+      'http://localhost:8888',
+      'http://localhost:5500'
+    ];
+    
+    // Check if origin matches any pattern or string
+    const isAllowed = allowedStrings.includes(origin) || 
+                     allowedPatterns.some(pattern => pattern.test(origin));
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
