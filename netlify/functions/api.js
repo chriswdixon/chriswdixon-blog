@@ -72,9 +72,9 @@ console.log('[API] DATABASE_URL configured:', !!process.env.DATABASE_URL);
 // Middleware
 app.use(cors({
   origin: [
-    /\.github\.io$/,
-    /\.githubpages\.com$/,
-    /\.netlify\.app$/,
+    /^https?:\/\/.*\.github\.io$/,
+    /^https?:\/\/.*\.githubpages\.com$/,
+    /^https?:\/\/.*\.netlify\.app$/,
     'http://localhost:3000',
     'http://localhost:8080',
     'http://localhost:8888',
