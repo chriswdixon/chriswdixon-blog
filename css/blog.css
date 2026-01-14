@@ -358,10 +358,13 @@
 
 .post-detail-image {
     width: 100%;
-    max-height: 500px;
-    object-fit: cover;
+    max-width: 800px;
+    max-height: 600px;
+    object-fit: contain;
+    object-position: center;
     border-radius: var(--radius-lg);
-    margin-bottom: var(--spacing-xl);
+    margin: 0 auto var(--spacing-xl) auto;
+    display: block;
 }
 
 .post-detail-content {
