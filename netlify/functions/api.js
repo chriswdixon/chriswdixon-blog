@@ -1474,8 +1474,7 @@ app.get('/api/linkedin/callback', async (req, res) => {
     const LINKEDIN_REDIRECT_URI = process.env.LINKEDIN_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/linkedin/callback`;
     
     if (!LINKEDIN_CLIENT_ID || !LINKEDIN_CLIENT_SECRET) {
-      const redirectBase = process.env.SITE_URL || `https://${req.get('host')}`;
-      return res.redirect(`${redirectBase}/admin/posts.html?linkedin_error=not_configured`);
+      return res.redirect(`${adminPostsUrl}?linkedin_error=not_configured`);
     }
 
     const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
@@ -1495,8 +1494,7 @@ app.get('/api/linkedin/callback', async (req, res) => {
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text();
       console.error('LinkedIn token exchange error:', errorData);
-      const redirectBase = process.env.SITE_URL || `https://${req.get('host')}`;
-      return res.redirect(`${redirectBase}/admin/posts.html?linkedin_error=token_exchange_failed`);
+      return res.redirect(`${adminPostsUrl}?linkedin_error=token_exchange_failed`);
     }
 
     const tokenData = await tokenResponse.json();
@@ -1527,12 +1525,12 @@ app.get('/api/linkedin/callback', async (req, res) => {
       `, [tokenData.refresh_token]);
     }
 
-    const redirectBase = process.env.SITE_URL || `https://${req.get('host')}`;
-    res.redirect(`${redirectBase}/admin/posts.html?linkedin_success=true`);
+    res.redirect(`${adminPostsUrl}?linkedin_success=true`);
   } catch (error) {
     console.error('LinkedIn callback error:', error);
     const redirectBase = process.env.SITE_URL || `https://${req.get('host')}`;
-    res.redirect(`${redirectBase}/admin/posts.html?linkedin_error=callback_failed`);
+    const adminPostsUrl = `${redirectBase}/admin/posts.html`;
+    res.redirect(`${adminPostsUrl}?linkedin_error=callback_failed`);
   }
 });
 
