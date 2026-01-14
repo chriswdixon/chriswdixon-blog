@@ -70,31 +70,39 @@ console.log('[API] Netlify Blobs available:', blobsAvailable);
 console.log('[API] DATABASE_URL configured:', !!process.env.DATABASE_URL);
 
 // Middleware - CORS configuration
-// Use a simple origin check function that works with serverless-http
-app.use(cors({
-  origin: function(origin, callback) {
+// Configure CORS to allow GitHub Pages origin
+const corsOptions = {
+  origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps, curl, Postman)
-    if (!origin) {
-      return callback(null, true);
-    }
+    if (!origin) return callback(null, true);
     
-    // Check if origin is allowed
-    const allowed = 
-      origin === 'https://chriswdixon.github.io' ||
-      /^https:\/\/.*\.github\.io$/.test(origin) ||
-      /^https:\/\/.*\.githubpages\.com$/.test(origin) ||
-      /^https:\/\/.*\.netlify\.app$/.test(origin) ||
-      /^http:\/\/localhost:\d+$/.test(origin);
+    // List of allowed origins
+    const allowedOrigins = [
+      'https://chriswdixon.github.io',
+      /^https:\/\/.*\.github\.io$/,
+      /^https:\/\/.*\.netlify\.app$/,
+      /^http:\/\/localhost/
+    ];
     
-    callback(null, allowed);
+    // Check if origin matches any allowed pattern
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (typeof allowed === 'string') {
+        return origin === allowed;
+      } else if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return false;
+    });
+    
+    callback(null, isAllowed);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Type', 'Authorization'],
-  preflightContinue: false,
-  optionsSuccessStatus: 204
-}));
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Health check endpoint
