@@ -69,40 +69,38 @@ console.log('[API] Module loaded successfully');
 console.log('[API] Netlify Blobs available:', blobsAvailable);
 console.log('[API] DATABASE_URL configured:', !!process.env.DATABASE_URL);
 
-// Middleware
+// Middleware - CORS configuration
 app.use(cors({
-  origin: function (origin, callback) {
+  origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, curl, Postman)
     if (!origin) return callback(null, true);
     
-    // List of allowed origins
-    const allowedPatterns = [
-      /^https?:\/\/.*\.github\.io$/,
-      /^https?:\/\/.*\.githubpages\.com$/,
-      /^https?:\/\/.*\.netlify\.app$/,
+    // Allowed origins
+    const allowedOrigins = [
+      'https://chriswdixon.github.io',
+      /^https:\/\/.*\.github\.io$/,
+      /^https:\/\/.*\.githubpages\.com$/,
+      /^https:\/\/.*\.netlify\.app$/,
       /^http:\/\/localhost:\d+$/
     ];
     
-    const allowedStrings = [
-      'http://localhost:3000',
-      'http://localhost:8080',
-      'http://localhost:8888',
-      'http://localhost:5500'
-    ];
+    // Check if origin is allowed
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (typeof allowed === 'string') {
+        return origin === allowed;
+      } else if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return false;
+    });
     
-    // Check if origin matches any pattern or string
-    const isAllowed = allowedStrings.includes(origin) || 
-                     allowedPatterns.some(pattern => pattern.test(origin));
-    
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
+    callback(null, isAllowed);
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 86400 // 24 hours
 }));
 app.use(express.json());
 
