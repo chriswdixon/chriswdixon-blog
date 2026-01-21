@@ -12,6 +12,8 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const multer = require('multer');
 const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 
 // Netlify Blobs
 let getStore;
@@ -65,9 +67,63 @@ async function withRetry(fn, { retries = 3, baseDelayMs = 150 } = {}) {
 
 const app = express();
 
-console.log('[API] Module loaded successfully');
-console.log('[API] Netlify Blobs available:', blobsAvailable);
-console.log('[API] DATABASE_URL configured:', !!process.env.DATABASE_URL);
+// Environment check
+const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NETLIFY_DEV === 'true';
+
+// Logging helper - only log sensitive info in development
+function secureLog(message, ...args) {
+  if (isDevelopment) {
+    console.log(message, ...args);
+  }
+}
+
+function secureErrorLog(message, ...args) {
+  // Always log errors to server logs, but sanitize for production
+  if (isDevelopment) {
+    console.error(message, ...args);
+  } else {
+    // In production, log errors without sensitive details
+    console.error(message);
+  }
+}
+
+secureLog('[API] Module loaded successfully');
+secureLog('[API] Netlify Blobs available:', blobsAvailable);
+secureLog('[API] DATABASE_URL configured:', !!process.env.DATABASE_URL);
+
+// Security Headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable CSP for API endpoints (handled by frontend)
+  crossOriginEmbedderPolicy: false,
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
+}));
+
+// Rate Limiting
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: { error: 'Too many requests, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 login attempts per windowMs
+  message: { error: 'Too many authentication attempts, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+});
+
+// Apply rate limiting
+app.use('/api/', apiLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 
 // Middleware - CORS configuration
 // Configure CORS to allow GitHub Pages origin
@@ -276,7 +332,7 @@ function decryptToken(encryptedText) {
     if (data.length < ENCRYPTED_POSITION) {
       // Legacy unencrypted token - return as is for backward compatibility
       // In production, you may want to log this and re-encrypt
-      console.warn('[LINKEDIN] Found unencrypted token - should re-encrypt');
+      secureLog('[LINKEDIN] Found unencrypted token - should re-encrypt');
       return encryptedText;
     }
     
@@ -293,7 +349,7 @@ function decryptToken(encryptedText) {
     decrypted = Buffer.concat([decrypted, decipher.final()]);
     return decrypted.toString('utf8');
   } catch (error) {
-    console.error('[LINKEDIN] Token decryption error:', error.message);
+    secureErrorLog('[LINKEDIN] Token decryption error:', error.message);
     // If decryption fails, try returning as-is (might be unencrypted legacy token)
     // In production, you may want to handle this differently
     return encryptedText;
@@ -536,7 +592,7 @@ app.get('/api/media/:assetId', async (req, res) => {
     }
     res.send(imageBuffer);
   } catch (error) {
-    console.error('[MEDIA ROUTE] Error:', error);
+    secureErrorLog('[MEDIA ROUTE] Error:', error.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -558,15 +614,14 @@ app.post('/api/auth/login', [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.error('[LOGIN] Validation errors:', errors.array());
+      secureErrorLog('[LOGIN] Validation errors:', errors.array());
       return res.status(400).json({ error: 'Invalid email or password' });
     }
 
     const { email, password } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
     
-    console.log('[LOGIN] Attempting login for:', normalizedEmail);
-    console.log('[LOGIN] Password provided:', !!password, 'Length:', password ? password.length : 0);
+    secureLog('[LOGIN] Attempting login for:', normalizedEmail);
 
     // Try to select with all possible columns, handle missing columns gracefully
     // Try both exact match and case-insensitive match
@@ -584,35 +639,34 @@ app.post('/api/auth/login', [
     }
 
     if (result.rows.length === 0) {
-      console.error('[LOGIN] User not found:', email);
+      secureErrorLog('[LOGIN] User not found:', email);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     const user = result.rows[0];
     
     if (!user.password_hash) {
-      console.error('[LOGIN] User found but password_hash is missing:', email);
+      secureErrorLog('[LOGIN] User found but password_hash is missing:', email);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    console.log('[LOGIN] User found:', {
+    secureLog('[LOGIN] User found:', {
+      id: user.id,
       email: user.email,
-      hash_length: user.password_hash ? user.password_hash.length : 0,
-      hash_preview: user.password_hash ? user.password_hash.substring(0, 20) + '...' : 'NULL'
+      has_password: !!user.password_hash
     });
     
-    console.log('[LOGIN] Comparing password for:', normalizedEmail);
+    secureLog('[LOGIN] Comparing password for:', normalizedEmail);
     const validPassword = await bcrypt.compare(password, user.password_hash);
     
-    console.log('[LOGIN] Password comparison result:', validPassword);
+    secureLog('[LOGIN] Password comparison result:', validPassword);
     
     if (!validPassword) {
-      console.error('[LOGIN] Password mismatch for:', normalizedEmail);
-      console.error('[LOGIN] Hash in DB:', user.password_hash ? user.password_hash.substring(0, 30) + '...' : 'NULL');
+      secureErrorLog('[LOGIN] Password mismatch for:', normalizedEmail);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    console.log('[LOGIN] Password valid, generating token for:', email);
+    secureLog('[LOGIN] Password valid, generating token for:', email);
     const token = jwt.sign(
       { id: user.id, email: user.email },
       JWT_SECRET,
@@ -630,63 +684,16 @@ app.post('/api/auth/login', [
       access_token: token
     });
   } catch (error) {
-    console.error('[LOGIN] Error:', error.message);
-    console.error('[LOGIN] Full error:', error);
+    secureErrorLog('[LOGIN] Error:', error.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Test endpoint to check if user exists (for debugging)
 // Usage: /api/auth/test-user?email=chriswdixon@gmail.com
-app.get('/api/auth/test-user', async (req, res) => {
-  try {
-    const email = req.query.email || 'chriswdixon@gmail.com';
-    
-    console.log('[TEST USER] Checking user:', email);
-    
-    const result = await dbQuery(
-      'SELECT id, email, password_hash, name, role, created_at FROM users WHERE email = $1',
-      [email]
-    );
-
-    console.log('[TEST USER] Query result rows:', result.rows.length);
-
-    if (result.rows.length === 0) {
-      console.log('[TEST USER] User not found:', email);
-      return res.json({ 
-        exists: false, 
-        message: 'User not found in database',
-        email: email,
-        action: 'Run the SQL script to create the user'
-      });
-    }
-
-    const user = result.rows[0];
-    const hashLength = user.password_hash ? user.password_hash.length : 0;
-    
-    console.log('[TEST USER] User found:', {
-      email: user.email,
-      has_password: !!user.password_hash,
-      hash_length: hashLength
-    });
-    
-    res.json({
-      exists: true,
-      email: user.email,
-      has_password: !!user.password_hash,
-      password_hash_length: hashLength,
-      password_hash_preview: user.password_hash ? user.password_hash.substring(0, 20) + '...' : null,
-      name: user.name,
-      role: user.role,
-      created_at: user.created_at,
-      status: hashLength === 60 ? '✅ Password hash looks correct' : hashLength < 50 ? '❌ Password hash too short' : '⚠️ Unexpected hash length'
-    });
-  } catch (error) {
-    console.error('[TEST USER] Error:', error);
-    console.error('[TEST USER] Error stack:', error.stack);
-    res.status(500).json({ error: error.message, stack: error.stack });
-  }
-});
+// Test endpoint - REMOVED for security
+// This endpoint exposed sensitive user information and internal structure
+// Use database tools directly for testing in development
 
 // Get current user
 app.get('/api/auth/user', authenticateToken, async (req, res) => {
@@ -702,7 +709,7 @@ app.get('/api/auth/user', authenticateToken, async (req, res) => {
 
     res.json({ user: result.rows[0] });
   } catch (error) {
-    console.error('Get user error:', error);
+    secureErrorLog('Get user error:', error.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -749,10 +756,10 @@ app.get('/api/blog/posts/:slug', async (req, res) => {
 
     res.json(transformBlogPost(result.rows[0]));
   } catch (error) {
-    console.error('Get post error:', error);
+    secureErrorLog('Get post error:', error.message);
     res.status(500).json({ 
       error: 'Internal server error',
-      message: process.env.NODE_ENV === 'development' ? error.message : 'Failed to fetch post'
+      message: isDevelopment ? error.message : 'Failed to fetch post'
     });
   }
 });
@@ -836,7 +843,7 @@ app.get('/api/blog/posts', async (req, res) => {
     const result = await dbQuery(query, params);
     res.json(result.rows.map(transformBlogPost));
   } catch (error) {
-    console.error('Get posts error:', error);
+    // Error logged above via secureErrorLog
     const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NETLIFY_DEV === 'true';
     res.status(500).json({ 
       error: 'Internal server error',
@@ -882,7 +889,7 @@ app.post('/api/blog/posts/:id/view', async (req, res) => {
     );
     res.json({ success: true });
   } catch (error) {
-    console.error('Increment view error:', error);
+    secureErrorLog('Increment view error:', error.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1003,7 +1010,7 @@ app.post('/api/blog/posts/:postId/comments', [
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error('Post comment error:', error);
+    secureErrorLog('Post comment error:', error.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1036,7 +1043,7 @@ app.post('/api/blog/newsletter', [
 
     res.json({ message: 'Successfully subscribed to newsletter' });
   } catch (error) {
-    console.error('Newsletter subscription error:', error);
+    secureErrorLog('Newsletter subscription error:', error.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1076,7 +1083,7 @@ app.get('/api/admin/posts', authenticateToken, async (req, res) => {
     `);
     res.json(result.rows.map(transformBlogPost));
   } catch (error) {
-    console.error('Get admin posts error:', error);
+    secureErrorLog('Get admin posts error:', error.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1228,7 +1235,7 @@ app.post('/api/admin/posts', authenticateToken, async (req, res) => {
     });
     res.status(500).json({ 
       error: error.message || 'Internal server error',
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      details: isDevelopment ? error.stack : undefined
     });
   }
 });
