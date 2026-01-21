@@ -225,6 +225,81 @@ async function dbQuery(query, params = []) {
 // JWT secret
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
+// Encryption key for LinkedIn tokens (use JWT_SECRET or separate ENCRYPTION_KEY)
+// Generate a 32-byte key from JWT_SECRET using SHA-256
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY 
+  ? Buffer.from(process.env.ENCRYPTION_KEY, 'utf8').slice(0, 32) 
+  : crypto.createHash('sha256').update(JWT_SECRET).digest().slice(0, 32);
+
+// Encryption algorithm
+const ALGORITHM = 'aes-256-gcm';
+const IV_LENGTH = 16; // For AES, this is always 16
+const SALT_LENGTH = 64;
+const TAG_LENGTH = 16;
+const TAG_POSITION = SALT_LENGTH + IV_LENGTH;
+const ENCRYPTED_POSITION = TAG_POSITION + TAG_LENGTH;
+
+/**
+ * Encrypt a token for secure storage
+ * @param {string} text - Token to encrypt
+ * @returns {string} - Encrypted token (base64 encoded)
+ */
+function encryptToken(text) {
+  if (!text) return text;
+  
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const salt = crypto.randomBytes(SALT_LENGTH);
+  const cipher = crypto.createCipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
+  
+  // Add salt for additional security
+  let encrypted = cipher.update(text, 'utf8');
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+  const tag = cipher.getAuthTag();
+  
+  // Combine: salt + iv + tag + encrypted
+  const result = Buffer.concat([salt, iv, tag, encrypted]);
+  return result.toString('base64');
+}
+
+/**
+ * Decrypt a token from storage
+ * @param {string} encryptedText - Encrypted token (base64 encoded)
+ * @returns {string} - Decrypted token or null if decryption fails
+ */
+function decryptToken(encryptedText) {
+  if (!encryptedText) return encryptedText;
+  
+  try {
+    const data = Buffer.from(encryptedText, 'base64');
+    
+    // Check if this is our new encrypted format (should be at least ENCRYPTED_POSITION bytes)
+    if (data.length < ENCRYPTED_POSITION) {
+      // Legacy unencrypted token - return as is for backward compatibility
+      // In production, you may want to log this and re-encrypt
+      console.warn('[LINKEDIN] Found unencrypted token - should re-encrypt');
+      return encryptedText;
+    }
+    
+    // Extract components
+    const salt = data.slice(0, SALT_LENGTH);
+    const iv = data.slice(SALT_LENGTH, TAG_POSITION);
+    const tag = data.slice(TAG_POSITION, ENCRYPTED_POSITION);
+    const encrypted = data.slice(ENCRYPTED_POSITION);
+    
+    const decipher = crypto.createDecipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
+    decipher.setAuthTag(tag);
+    
+    let decrypted = decipher.update(encrypted);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted.toString('utf8');
+  } catch (error) {
+    console.error('[LINKEDIN] Token decryption error:', error.message);
+    // If decryption fails, try returning as-is (might be unencrypted legacy token)
+    // In production, you may want to handle this differently
+    return encryptedText;
+  }
+}
+
 // ============================================
 // AUTHENTICATION MIDDLEWARE
 // ============================================
@@ -1499,8 +1574,7 @@ app.get('/api/linkedin/callback', async (req, res) => {
 
     const tokenData = await tokenResponse.json();
     
-    // Store access token in database (encrypted or in environment variable)
-    // For now, we'll store it in a settings table or use environment variable
+    // Store access token in database (encrypted)
     // Create settings table if it doesn't exist
     await pool.query(`
       CREATE TABLE IF NOT EXISTS settings (
@@ -1510,19 +1584,22 @@ app.get('/api/linkedin/callback', async (req, res) => {
       )
     `);
     
-    // Store encrypted token (in production, use proper encryption)
+    // Encrypt and store access token
+    const encryptedAccessToken = encryptToken(tokenData.access_token);
     await pool.query(`
       INSERT INTO settings (key, value, updated_at)
       VALUES ('linkedin_access_token', $1, NOW())
       ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = NOW()
-    `, [tokenData.access_token]);
+    `, [encryptedAccessToken]);
     
     if (tokenData.refresh_token) {
+      // Encrypt and store refresh token
+      const encryptedRefreshToken = encryptToken(tokenData.refresh_token);
       await pool.query(`
         INSERT INTO settings (key, value, updated_at)
         VALUES ('linkedin_refresh_token', $1, NOW())
         ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = NOW()
-      `, [tokenData.refresh_token]);
+      `, [encryptedRefreshToken]);
     }
 
     res.redirect(`${adminPostsUrl}?linkedin_success=true`);
@@ -1573,7 +1650,8 @@ app.post('/api/linkedin/post', authenticateToken, async (req, res) => {
       });
     }
 
-    const accessToken = tokenResult.rows[0].value;
+    // Decrypt the access token
+    const accessToken = decryptToken(tokenResult.rows[0].value);
 
     // Get user's LinkedIn person URN
     const personResponse = await fetch('https://api.linkedin.com/v2/me', {
@@ -1584,13 +1662,14 @@ app.post('/api/linkedin/post', authenticateToken, async (req, res) => {
     });
 
     if (!personResponse.ok) {
-      // Token might be expired
+      // Token might be expired - check if we have a refresh token
       const refreshResult = await pool.query(
         'SELECT value FROM settings WHERE key = $1',
         ['linkedin_refresh_token']
       );
       
       if (refreshResult.rows.length > 0 && refreshResult.rows[0].value) {
+        // Refresh token exists (still encrypted) - prompt user to re-authenticate
         return res.status(401).json({ 
           error: 'LinkedIn token expired. Please re-authenticate.',
           requiresAuth: true 
